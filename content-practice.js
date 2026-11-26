@@ -1,23 +1,4 @@
-/* =====================================================================
-   content-practice.js  —  TECHNIQUE, PARAGRAPH AND SKILLS PRACTICE
-   ---------------------------------------------------------------------
-   Each list below is a set of questions. To add one, copy a line, keep the
-   same shape, and change the words. Remember: every line ends with a comma,
-   and everything in quotes ("...") must stay inside the quotes.
-
-   IMPORTANT RULE FOR QUIZ OPTIONS: the FIRST option is always the correct
-   one. The website shuffles them, so students never see it first.
-   Make the wrong options CLOSE to the right one so students must read.
-
-   LANG   ["Technique", "example sentence", [correct effect, wrong, wrong, wrong]]
-   VIS    same as LANG but for visual techniques
-   NAME   ["example sentence", [correct technique, wrong, wrong, wrong]]
-   LINKS  ["sentence with ____ gap", [correct word, wrong, wrong, wrong], "why"]
-   FIX    ["paragraph", "question", [correct, wrong, wrong, wrong], "why"]
-   FIND   ["text id", "instruction", "exact words from the text", "why"]
-   PARAS  paragraphs with roles: P=Point E=Evidence X=Explanation L=Link
-   BUILD  prompts for the Write-your-own paragraph tab
-   ===================================================================== */
+// Technique, paragraph and skills practice. In quiz lists the FIRST option is correct.
 
 // [technique, example, [correct effect, three close but wrong effects]]
 const LANG=[

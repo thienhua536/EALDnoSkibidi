@@ -1,14 +1,4 @@
-/* =====================================================================
-   content-topics.js  —  EXTENDED RESPONSE TOPIC MAKER
-   ---------------------------------------------------------------------
-   The topic maker mixes ONE key word + TWO ideas + ONE angle + ONE sentence
-   shape. Add more of any list and the number of possible topics grows.
-   TOPIC_VERBS   key words (verbs)             e.g. "Analyse",
-   TOPIC_IDEAS   ["idea","question to think about"],
-   TOPIC_ANGLES  techniques to focus on        e.g. "contrast",
-   TOPIC_FORMS   sentence shapes. (V=key word, a/b=ideas, g=angle)
-   PHRASES       sentence starters shown on the Sentence starters tab
-   ===================================================================== */
+// Extended response topic maker and sentence starters. Original study material.
 const TOPIC_VERBS=["Analyse","Evaluate","Discuss","Examine","Explain","Assess","Justify","Explore","Account for"];
 // [idea, a question to think about]
 const TOPIC_IDEAS=[

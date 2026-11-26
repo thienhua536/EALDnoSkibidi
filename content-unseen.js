@@ -1,10 +1,4 @@
-/* =====================================================================
-   content-unseen.js  —  UNSEEN TEXTS AND EXAM PAPER B
-   ---------------------------------------------------------------------
-   Unseen texts use cat:"unseen" and an extra  kind:"Poetry"  label.
-   Add the questions in READ (same shape as content-reading.js) and one
-   writing task in UNSEEN_WRITE using the same id as the text.
-   ===================================================================== */
+// Unseen texts: read first, answer the questions, then write one short answer. Also Exam Paper B.
 Object.assign(TEXTS,{
 nightshift:{cat:"unseen",kind:"Poetry",title:"Night Shift",by:"Unseen poem",
 body:`At ten my father ties his boots
