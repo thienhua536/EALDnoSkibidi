@@ -84,3 +84,10 @@ function techMoreQuiz(){
     return {s:"Naming techniques",passage:`“${ex}”`,ask:"Which technique is mainly used here?",o:[name,...wrong],why:`${name}: ${meaning.charAt(0).toLowerCase()+meaning.slice(1)}`,ev:[],plain:"Read the example. What is the name of the main writing tool in it?"};
   });
 }
+
+// ---------- POPULAR IN EXAMS ----------
+// Techniques that come up often in HSC-style questions (this is a study-guide estimate; check with your teacher).
+// Tick "Only popular in exams" on the lessons tab, or choose "Popular in exams" on the flashcards.
+// To add one, write its exact name from TECH_MORE (below) or from LANG/VIS in content-practice.js.
+const POPULAR=["Juxtaposition","Irony","Motif","Pathetic fallacy","Foreshadowing","Tone shift","Connotation","Semantic field","Inclusive language","Modality","Statistics","Dialogue","Third-person narration","Ellipsis","Tricolon","Lighting","Negative space","Analogy","Colloquial language",
+"Simile","Metaphor","Personification","Sensory imagery","Repetition","Alliteration","Symbolism","Contrast","Rhetorical question","Anaphora","Emotive language","Direct address","Salience","Vector","Close-up","Colour","Framing"];

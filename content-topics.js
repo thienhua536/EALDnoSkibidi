@@ -1,4 +1,14 @@
-// Extended response topic maker and sentence starters. Original study material.
+/* =====================================================================
+   content-topics.js  —  EXTENDED RESPONSE TOPIC MAKER
+   ---------------------------------------------------------------------
+   The topic maker mixes ONE key word + TWO ideas + ONE angle + ONE sentence
+   shape. Add more of any list and the number of possible topics grows.
+   TOPIC_VERBS   key words (verbs)             e.g. "Analyse",
+   TOPIC_IDEAS   ["idea","question to think about"],
+   TOPIC_ANGLES  techniques to focus on        e.g. "contrast",
+   TOPIC_FORMS   sentence shapes. (V=key word, a/b=ideas, g=angle)
+   PHRASES       sentence starters shown on the Sentence starters tab
+   ===================================================================== */
 const TOPIC_VERBS=["Analyse","Evaluate","Discuss","Examine","Explain","Assess","Justify","Explore","Account for"];
 // [idea, a question to think about]
 const TOPIC_IDEAS=[
@@ -33,7 +43,14 @@ const TOPIC_IDEAS=[
  ["conflict","What starts it, and is it ever really finished?"],
  ["connection","What small act joins two people who were apart?"],
  ["pride","When does self-respect help, and when does it blind?"],
- ["empathy","What would a character see if they stood in someone else’s place?"]
+ ["empathy","What would a character see if they stood in someone else’s place?"],
+ ["agency","Who gets to choose, and who is stopped from choosing?"],
+ ["conformity","What pressure is there to fit in, and what does it cost?"],
+ ["motivation","What does a person want, and what do they also fear or refuse?"],
+ ["contradiction","Where do wants, words or actions pull in opposite directions?"],
+ ["lived experience","How does the text make an experience feel real from the inside?"],
+ ["storytelling","Why is this story told, and who is meant to hear it?"],
+ ["assumptions","What would a reader expect, and does the text challenge that?"]
 ];
 const TOPIC_ANGLES=["symbols and imagery","structure and sequence","voice and perspective","setting and context","contrast","tone and mood","language choices","silence and what is left unsaid","characterisation","repetition and patterns"];
 const cap=s=>s[0].toUpperCase()+s.slice(1);

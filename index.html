@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Evidence Finder</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Literata:opsz,wght@7..72,400;7..72,600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Literata:opsz,wght@7..72,400;7..72,600&family=Noto+Sans+Khmer:wght@400;700&display=swap">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,6 +12,7 @@
 <header>
   <h1><span>Evidence</span> Finder</h1>
   <p>HSC EAL/D practice. Read closely, prove your answer, then build your own paragraphs.</p>
+  <label class="langpick">Translations <select id="lang"><option value="both">Vietnamese + Khmer</option><option value="vi">Vietnamese</option><option value="km">Khmer</option><option value="off">English only</option></select></label>
 </header>
 <div id="sections" class="sections" role="group" aria-label="Sections"></div>
 <div id="subtabs" class="subtabs" role="group" aria-label="Content types"></div>
@@ -32,6 +33,9 @@
 <script src="content-practice.js"></script>
 <script src="content-help.js"></script>
 <script src="content-topics.js"></script>
+<script src="content-more.js"></script>
+<script src="content-module1.js"></script>
+<script src="content-khmer.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

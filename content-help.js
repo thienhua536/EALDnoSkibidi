@@ -1,4 +1,13 @@
-// Synonyms, simpler question wording, hard words and NESA key words.
+/* =====================================================================
+   content-help.js  —  HELP WORDS
+   ---------------------------------------------------------------------
+   SYN    similar words for vocabulary cards:  "word":"synonym, synonym",
+   PLAIN  simpler question wording, in the same order as the questions
+   HARD   hard words: [pattern, word, simple meaning]
+   NESA   key words: w("Word","Vietnamese","meaning","what to do","similar words", true)
+          (the last true means it is often useful in English)
+   TERMS  English terms: t("Word","Vietnamese","meaning","similar words")
+   ===================================================================== */
 
 // Similar words for each vocabulary card (same meaning as used in the text).
 const SYN={"weep":"cry, sob","mirth":"joy, laughter, cheer","shrink from":"avoid, pull away from","passport":"travel document","uniform":"work outfit, official clothing","trust":"rely on, believe in","funeral":"burial service, memorial service","murmur":"whisper, mutter","drain":"plughole, outlet","terrified":"petrified, very frightened","accent":"way of speaking, pronunciation","evidence":"proof, support","patience":"tolerance, calm waiting","neighbour":"local resident, person next door","loneliness":"isolation, feeling alone","crept":"sneaked, edged","foolish":"silly, ridiculous","community":"neighbourhood, local people","invitation":"request to join, welcome","salience":"prominence, standing out","platform":"station deck, boarding area","departure":"leaving, exit","isolation":"separation, aloneness","explain":"clarify, make clear","analyse":"examine closely, break down","convey":"communicate, express","belonging":"acceptance, inclusion","celebrate":"honour, mark","gaze":"look, stare","vector":"guiding line, line of sight","nervousness":"anxiety, worry","alarm":"warning, alert","protect":"guard, shield","audition":"tryout, trial performance","stove":"cooker, cooktop","explode":"burst, blow apart","grin":"beam, smile widely","memoir":"life story, personal recollection","persimmon":"orange fruit","creek":"stream, brook","firefly":"glow-worm (a related glowing insect), lightning bug","stitched":"sewn, threaded","sole":"underside, base","corridor":"hallway, passage","polish":"shine, buff","marks":"grades, scores","flat":"apartment, unit","empty":"vacant, bare","shriek":"screech, scream","sigh":"breathe out heavily","bottomless":"endless, very deep","councillor":"council member, local representative","cost":"price, loss","sincerely":"truly, honestly","jog":"trot, run gently","furious":"enraged, very angry","gravel":"small stones, grit","kite":"flying toy","bowed":"bent, lowered","glow":"gleam, soft light"};

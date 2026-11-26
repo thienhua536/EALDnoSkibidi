@@ -1,4 +1,18 @@
-// Reading questions. In every question the FIRST option is the correct one (the page shuffles them).
+/* =====================================================================
+   content-reading.js  —  READING TEXTS AND THEIR QUESTIONS
+   ---------------------------------------------------------------------
+   HOW TO ADD A TEXT
+   1. Add it inside Object.assign(TEXTS,{ ... }) like the others:
+        mytext:{cat:"poetry", title:"My Title", by:"Practice poem",
+        body:`The text goes here.
+        New lines are kept.`,
+        vocab:[["word","simple meaning","Vietnamese"]]},
+      cat can be: poetry, fiction, nonfiction, visual
+   2. Add questions for it in READ, using the q() helper:
+        mytext:[ q("Skill name","Question?",[correct,wrong,wrong,wrong],"Why it is right",["words to highlight"]), ],
+   The FIRST option is always correct (the page shuffles them).
+   The highlight words must be copied EXACTLY from the text.
+   ===================================================================== */
 // q(skill, question, [correct, wrong, wrong, wrong], explanation, [words to highlight or picture areas])
 const q=(s,ask,o,why,ev=[])=>({s,ask,o,why,ev});
 

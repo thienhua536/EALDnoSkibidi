@@ -20,7 +20,7 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--body)}
 [hidden]{display:none!important}
-.wrap{max-width:1120px;margin:0 auto;padding-block:24px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1400px;margin:0 auto;padding-block:24px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 header{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:8px 24px;margin-bottom:20px}
 h1{font:800 clamp(2rem,6vw,3.1rem)/1 var(--display);margin:0;letter-spacing:-.02em}
 h1 span{background:linear-gradient(transparent 58%,var(--title-hl) 58% 92%,transparent 92%);padding:0 .08em}
@@ -97,7 +97,7 @@ details.plain{border:0;padding:0;margin-top:12px}
 details.plain>summary{display:inline-block;border:1.5px solid var(--accent);color:var(--accent);border-radius:8px;padding:7px 14px}
 details.plain[open]{background:var(--bg);border-radius:8px;padding:12px}
 details.plain p{margin:10px 0 0}
-input[type="search"]{width:100%;font:1rem var(--body);color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px}
+input[type="search"],input[type="text"]{width:100%;font:1rem var(--body);color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px}
 a{color:var(--accent)}
 
 /* Find the evidence and paragraphs */
@@ -155,3 +155,40 @@ footer p{margin:8px 0}
 select{width:100%;font:1rem var(--body);color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;min-width:0}
 select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .btn.small{padding:4px 10px;font-size:.85rem;margin-left:6px}
+
+/* ----- celebration box and confetti (used by cheer() in app.js) ----- */
+.cheer{position:relative;overflow:hidden;text-align:center;padding:18px 8px 6px;border-radius:12px;background:var(--hl);margin-bottom:14px}
+.cheer h2{margin:.2rem 0}
+.cheer .big-msg{font-size:1.1rem;font-weight:700}
+.cheer h3{margin:.8rem 0 .2rem}
+.facts{list-style:none;padding:0;margin:.4rem auto;max-width:38rem;text-align:left}
+.facts li{padding:6px 0 6px 28px;position:relative;line-height:1.45}
+.facts li::before{content:"✓";position:absolute;left:4px;color:var(--ok);font-weight:800}
+.party{position:absolute;inset:0;pointer-events:none}
+.party i{position:absolute;top:-12px;left:var(--x);width:8px;height:12px;border-radius:2px;animation:fall 2.2s ease-in var(--d) 1 both}
+.party i:nth-child(4n+1){background:var(--accent)}.party i:nth-child(4n+2){background:var(--ok)}.party i:nth-child(4n+3){background:var(--bad)}.party i:nth-child(4n){background:var(--ink)}
+@keyframes fall{from{transform:translateY(0) rotate(0);opacity:1}to{transform:translateY(260px) rotate(540deg);opacity:0}}
+@media (prefers-reduced-motion:reduce){.party{display:none}}
+.mistake{border-top:1px solid var(--line);padding:14px 0}
+.mistake h3{margin:.4rem 0}
+.myopt{display:flex;gap:10px;align-items:center;margin:8px 0}
+.myopt input[type="radio"]{width:22px;height:22px;flex:none;accent-color:var(--accent)}
+
+/* ----- wide list pages use the side space (lessons, Module 1, glossary, home) ----- */
+main.wide{grid-template-columns:minmax(0,1280px);justify-content:center}
+.cols{column-width:330px;column-gap:24px}
+.cols>details,.cols>article{break-inside:avoid;margin-bottom:10px}
+.cols>h3{column-span:all;margin:1rem 0 .4rem}
+.filters{display:flex;flex-wrap:wrap;gap:8px 18px;margin:.6rem 0 1rem}
+.chk{display:flex;gap:8px;align-items:center;cursor:pointer}
+.chk input{width:20px;height:20px;accent-color:var(--accent)}
+.gogrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:.6rem 0 1rem}
+.gogrid button{text-align:left;font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:12px;cursor:pointer;display:grid;gap:4px}
+.gogrid button:hover{border-color:var(--accent)}
+.gogrid small{color:var(--muted)}
+[lang="km"]{font-family:"Noto Sans Khmer",var(--body),sans-serif;line-height:1.7}
+.langpick{display:flex;gap:8px;align-items:center;font-size:.9rem;font-weight:700}
+.langpick select{width:auto;padding:6px 10px}
+@media (min-width:1100px){.cols{column-count:3}}
+
+.grid3{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:4px 24px;align-items:start;margin-bottom:12px}
