@@ -27,7 +27,7 @@ const plain=s=>" "+s.toLowerCase().replace(/[^a-z0-9]+/g," ").trim()+" ";
 //   best = best score per quiz | skills = right/total per skill | wrong = ids of missed questions
 //   drafts = written answers | done = finished activities | times = how often each question was missed
 //   custom = questions and cards the user made | topics = saved essay topics | lessons = lessons finished
-const blank=()=>({best:{},skills:{},wrong:[],drafts:{},build:{},done:{},times:{},custom:{cards:[],qs:[]},topics:[],lessons:0,lang:"both"});
+const blank=()=>({best:{},skills:{},wrong:[],drafts:{},build:{},done:{},times:{},custom:{cards:[],qs:[]},topics:[],lessons:0,lang:"both",known:{}});
 let store=blank();
 try{
   const saved=JSON.parse(localStorage.getItem("ef3"));
@@ -37,7 +37,7 @@ try{
     old?.a?.forEach((d,i)=>{if(d.text) store.drafts["a"+(i+1)]=d});
   }
 }catch(e){}
-store.times??={};store.custom??={cards:[],qs:[]};store.topics??=[];store.lessons??=0;store.lang??="both";
+store.times??={};store.custom??={cards:[],qs:[]};store.topics??=[];store.lessons??=0;store.lang??="both";store.known??={};
 const save=()=>{try{localStorage.setItem("ef3",JSON.stringify(store))}catch(e){}};
 
 /* ---------- Question bank ---------- */
@@ -100,6 +100,7 @@ const SECTIONS=[
  {id:"write",name:"Exam writing",tabs:[{id:"a",name:"Practice paper A",view:"paper",paper:PAPER_A},{id:"b",name:"Practice paper B",view:"paper",paper:PAPER_B},{id:"topics",name:"Topic maker",view:"topics"},{id:"phrases",name:"Sentence starters",view:"phrases"}]},
  {id:"skills",name:"Skills",tabs:[quizTab("links","Linking words",["links"]),quizTab("hsc","Short-answer skills",["hsc"]),{id:"vocab",name:"Vocabulary cards",view:"cards",deck:"vocab"}]},
  {id:"nesa",name:"NESA words",tabs:[{id:"verbs",name:"Question words",view:"glossary",list:NESA},{id:"terms",name:"English terms",view:"glossary",list:TERMS},{id:"nesacards",name:"Flashcards",view:"cards",deck:"nesa"},quizTab("nesaquiz","Quiz",["nesa"])]},
+ {id:"bio",name:"Biology",tabs:[{id:"cards",name:"Module 5 flashcards",view:"cards",deck:"bio5"},{id:"map",name:"Syllabus map",view:"biomap"}]},
  {id:"me",name:"My progress",tabs:[{id:"overview",name:"Overview",view:"progress"},{id:"mistakes",name:"My mistakes",view:"mistakes"},{id:"custom",name:"Make my own",view:"custom"},quizTab("myquiz","My quiz",["my"]),{id:"mycards",name:"My cards",view:"cards",deck:"mine"}]}
 ];
 const ui={sec:"home",tab:{},item:{},model:"PEEL",cardopt:{},mfilter:"",my:null};
@@ -284,12 +285,17 @@ const VIEWS={
  paper(){const p=tab().paper,i=itemNo();written(p[i],`Question ${i+1} · ${p[i].verb}`,"")},
  cards(){
   const deck=tab().deck,o=ui.cardopt[key()]??={dir:"term",group:"all"};
-  const all=cardList(deck,o.group).filter(c=>o.dir!=="example"||c.ex);
+  const known=store.known[deck]??=[];
+  const all=cardList(deck,o.group).map(c=>({...c,id:deck+":"+c.term})).filter(c=>(o.dir!=="example"||c.ex)&&!(o.hide&&known.includes(c.id)));
   const s=sessions[key()]??={queue:shuffle(all),total:all.length,flipped:false,got:0,almost:0,notyet:0,hard:[],start:Date.now(),counted:false};
   const sel=(name,label,opts)=>`<label class="pick"><span>${label}</span><select data-opt="${name}">${opts.map(([v,t])=>`<option value="${v}" ${o[name]===v?"selected":""}>${t}</option>`).join("")}</select></label>`;
-  const dirs=[["term","Term → meaning"],["meaning","Meaning → term"],...(deck==="tech"?[["example","Example → technique"]]:[])];
-  const options=`<div class="picks">${sel("dir","Show me first",dirs)}${deck==="tech"?sel("group","Which cards",Object.entries(CARD_GROUPS)):""}</div>`;
-  if(!all.length) return layout("",`<section class="panel"><h2>${deck==="mine"?"No cards yet":"No cards here"}</h2><p>${deck==="mine"?"Open Make my own to create your first flashcard.":"Choose another option."}</p></section>`);
+  const bio=deck==="bio5";
+  const dirs=bio?[["term","Question → answer"],["meaning","Answer → question"]]:[["term","Term → meaning"],["meaning","Meaning → term"],...(deck==="tech"?[["example","Example → technique"]]:[])];
+  const total=cardList(deck,"all").length,sure=known.filter(id=>id.startsWith(deck+":")).length;
+  const options=`<div class="picks">${sel("dir","Show me first",dirs)}${deck==="tech"?sel("group","Which cards",Object.entries(CARD_GROUPS)):bio?sel("group","Which cards",Object.entries(BIO_GROUPS)):""}</div>
+  <label class="chk"><input type="checkbox" data-opt="hide" ${o.hide?"checked":""}><span>Hide cards I already marked “Got it” (saved in this browser)</span></label>
+  <p class="note">Saved “Got it” cards: ${sure} of ${total}. ${sure?button("cards-forget","Forget them","quiet small"):""}</p>`;
+  if(!all.length&&!s.total) return layout("",`<section class="panel"><h2>${deck==="mine"?"No cards yet":"No cards here"}</h2><p>${deck==="mine"?"Open Make my own to create your first flashcard.":"Nothing to study with these options. Untick “Hide cards I already marked” or choose another set."}</p>${deck==="mine"?"":options}</section>`);
   if(!s.queue.length){
     if(!s.counted){s.counted=true;store.lessons++;save()}
     return layout("",`<section class="panel">${cheer("Deck finished!",s.notyet?"Great persistence. You kept the hard cards in the pile until you knew them.":"Brilliant. You knew these cards straight away.",[`You studied ${s.total} cards in ${mmss(Math.round((Date.now()-s.start)/1000))}.`,`Got it: ${s.got} times. Almost: ${s.almost}. Not yet: ${s.notyet}.`,s.hard.length?`Cards that needed extra practice: ${s.hard.slice(0,8).join(", ")}${s.hard.length>8?" and more":""}.`:"No card needed extra practice."])}
@@ -300,11 +306,20 @@ const VIEWS={
   if(o.dir==="meaning"){front=c.meaning;back=[`<b>${c.term}</b>`,ex,...c.more]}
   else if(o.dir==="example"){front=`“${c.ex}”`;back=[`<b>${c.term}</b>`,c.meaning,...c.more]}
   else{front=c.term;back=[c.meaning,ex,...c.more]}
-  const ask=o.dir==="term"?"Say the meaning aloud before you flip.":o.dir==="meaning"?"Which term has this meaning? Say it aloud.":"Which technique is this? Say it aloud.";
+  const ask=bio?(o.dir==="term"?"Say or write your answer before you flip.":"What question or term does this answer? Say it aloud."):o.dir==="term"?"Say the meaning aloud before you flip.":o.dir==="meaning"?"Which term has this meaning? Say it aloud.":"Which technique is this? Say it aloud.";
   layout("",`<section class="panel"><p class="kicker">${s.queue.length} cards left of ${s.total}. ${ask}</p>${options}
-  <div class="card" aria-live="polite"><div class="big">${front}</div>${s.flipped?back.filter(Boolean).map((line,i)=>`<p class="${i?"note":""}">${line}</p>`).join(""):""}</div>
+  <div class="card" aria-live="polite">${c.tag?`<p class="note tagline">${c.tag}</p>`:""}<div class="big">${front}</div>${s.flipped?back.filter(Boolean).map((line,i)=>`<p class="${i?"note":""}">${line}</p>`).join(""):""}</div>
   <div class="actions">${s.flipped?button("card-notyet","Not yet","quiet")+button("card-almost","Almost","quiet")+button("card-known","Got it"):button("flip","Flip card")}${button("cards-reset","Reshuffle","quiet")}</div>
   <p class="note">Not yet: comes back in 2 cards. Almost: comes back in 5. Got it: leaves the pile.</p></section>`);
+ },
+ biomap(){
+  const count=k=>BIO.filter(b=>b[0]===k||b[0][0]===k).length;
+  layout("",`<section class="panel"><span class="skill">Biology · Module 5 Heredity</span><h2>Syllabus map</h2>
+  <p>Flashcards cover Inquiry Questions 1 to 3 and Inquiry Question 4 up to its second dot point. Press Study to open just those cards. These are original study notes based on the NSW Biology Stage 6 (2017) syllabus; check details with your teacher and textbook.</p>
+  ${[1,2,3,4].map(n=>`<h3>${BIO_IQ[n]}</h3><div class="actions">${button("bio-study",`Study all ${count(String(n))} cards`,"",`data-v="${n}"`).replace('data-k="bio-study"',`data-k="bs${n}"`)}</div>
+  <ul class="plainlist">${Object.entries(BIO_DP).filter(([k])=>k[0]==String(n)).map(([k,v])=>`<li>${k} ${v} <span class="note">(${count(k)} cards)</span> ${button("bio-study","Study","quiet small",`data-v="${k}"`).replace('data-k="bio-study"',`data-k="bs${k}"`)}</li>`).join("")}</ul>`).join("")}
+  <p class="note">Not included yet: IQ4 dot point 3 (frequency data and SNPs) and IQ5 (population genetics).</p></section>`);
+  $("main").className="wide";
  },
  lessons(){
   const f=ui.lf??={popular:false,off:[]}; // popular = only popular ones; off = groups that are unticked
@@ -328,10 +343,11 @@ const VIEWS={
   $("main").className="wide";
  },
  home(){
-  const GO={m1:"Learn the Module 1 ideas, take the quiz, make essay topics.",tech:"Lessons, flashcards and quizzes on language and visual techniques.",read:"Close reading with questions that need real evidence from the text.",unseen:"Read a new text, answer questions, then write.",para:"Rebuild, label, fix and write PEEL and TEEL paragraphs.",write:"Practice papers, the topic maker and sentence starters.",skills:"Linking words, short-answer skills and vocabulary cards.",nesa:"NESA key words and English terms.",me:"Your progress, your mistakes and your own questions."};
+  const GO={m1:"Learn the Module 1 ideas, take the quiz, make essay topics.",tech:"Lessons, flashcards and quizzes on language and visual techniques.",read:"Close reading with questions that need real evidence from the text.",unseen:"Read a new text, answer questions, then write.",para:"Rebuild, label, fix and write PEEL and TEEL paragraphs.",write:"Practice papers, the topic maker and sentence starters.",skills:"Linking words, short-answer skills and vocabulary cards.",nesa:"NESA key words and English terms.",bio:"Biology Module 5 (Heredity) flashcards for IQ1 to IQ4 dot point 2.",me:"Your progress, your mistakes and your own questions."};
   layout("",`<section class="panel"><h2>Welcome to Evidence Finder</h2>
   <p class="big-msg">Practise HSC English EAL/D, one small step at a time.</p>
   <p><b>Purpose.</b> This site helps you get ready for <b>Module 1: Texts and human experiences</b>. You learn the words and techniques, read closely, prove every answer with evidence from the text, and then build your own paragraphs and extended responses.</p>
+  <p><b>Biology too.</b> The Biology section has flashcards for Module 5 (Heredity). It is separate from the English work.</p>
   <p><b>No AI marking.</b> The answers are fixed and every wrong answer comes with a reason, so you can trust what you see. Your progress is saved only in this browser.</p>
   <h3>Start in this order</h3><ol class="plainlist">
    <li><b>Module 1 > Key ideas.</b> Learn what “human experiences” covers.</li>
@@ -496,6 +512,8 @@ const VIEWS={
 /* ---------- Flashcard decks ---------- */
 // Each card is {term, meaning, ex (example, may be empty), more (extra lines), group}.
 // To add cards: add techniques in content-more.js, words in content-practice.js, or use Make my own.
+// Biology filter menu: "all", a whole inquiry question ("1"), or one dot point ("1.2")
+const BIO_GROUPS={all:"All cards (IQ1 to IQ4 dot point 2)",...Object.fromEntries([1,2,3,4].flatMap(n=>[[String(n),BIO_IQ[n].slice(0,60)+(BIO_IQ[n].length>60?"…":"")+" (all)"],...Object.entries(BIO_DP).filter(([k])=>k[0]==String(n)).map(([k,v])=>[k,"   "+k+" "+(v.length>58?v.slice(0,58)+"…":v)])]))};
 const CARD_GROUPS={all:"All techniques",popular:"★ Popular in exams",core:"Core language",visual:"Visual",...Object.fromEntries(Object.entries(TECH_GROUPS).filter(([g])=>g!=="visual"))};
 function cardList(deck,group){
   if(deck==="tech"){
@@ -504,6 +522,10 @@ function cardList(deck,group){
       ...VIS.map(([n,ex,o])=>({term:n,meaning:o[0],ex,more:[],group:"visual"})),
       ...TECH_MORE.map(t=>({term:t[0],meaning:t[2],ex:t[3],more:[`Write about it: ${t[4]}`],group:t[1]}))];
     return group==="all"?list:group==="popular"?list.filter(c=>POPULAR.includes(c.term)):list.filter(c=>c.group===group);
+  }
+  if(deck==="bio5"){ // Biology Module 5: group = "1", "1.2" etc. (see content-biology.js)
+    const cards=BIO.map(([dp,q,a])=>({term:q,meaning:a,ex:"",more:[],group:dp,tag:`IQ${dp[0]} · ${dp} ${BIO_DP[dp]}`}));
+    return group==="all"?cards:cards.filter(c=>c.group===group||c.group[0]===group);
   }
   if(deck==="nesa") return [...NESA,...TERMS].map(n=>({term:n.word,meaning:n.meaning,ex:"",more:[`Similar words: ${n.similar}`,trans(n.word,n.vi)]}));
   if(deck==="mine") return store.custom.cards.map(c=>({term:c.front,meaning:c.back,ex:"",more:[]}));
@@ -585,7 +607,10 @@ const ACT={
  check:()=>{const d=draft(writing.id);if(!d.text.trim()){$("count").textContent="Write your answer first, then check it.";$("answer").focus();return false}d.shown=true;save()},
  flip:()=>{sessions[key()].flipped=true},
  // Card ratings: "Not yet" puts the card 2 places back, "Almost" 5 places back, "Got it" removes it.
- "card-known":()=>{const s=sessions[key()];s.queue.shift();s.got++;s.flipped=false},
+ "card-known":()=>{const s=sessions[key()],c=s.queue.shift(),k=store.known[tab().deck]??=[];s.got++;s.flipped=false;if(!k.includes(c.id)){k.push(c.id);save()}},
+ "cards-forget":()=>{store.known[tab().deck]=[];save();delete sessions[key()]},
+ // Biology syllabus map: jump to the flashcards for one inquiry question or dot point
+ "bio-study":v=>{ui.tab.bio="cards";ui.cardopt["bio/cards"]={dir:"term",group:v,hide:false};delete sessions["bio/cards"]},
  "card-almost":()=>{const s=sessions[key()],c=s.queue.shift();s.almost++;s.queue.splice(Math.min(5,s.queue.length),0,c);s.flipped=false},
  "card-notyet":()=>{const s=sessions[key()],c=s.queue.shift();s.notyet++;if(!s.hard.includes(c.term))s.hard.push(c.term);s.queue.splice(Math.min(2,s.queue.length),0,c);s.flipped=false},
  "cards-reset":()=>{delete sessions[key()]},
@@ -671,7 +696,7 @@ document.addEventListener("change",e=>{
   if(e.target.dataset.opt){ // the little drop-down menus on flashcards and My mistakes
     const name=e.target.dataset.opt;
     if(name==="mfilter") ui.mfilter=e.target.value;
-    else{ui.cardopt[key()][name]=e.target.value;delete sessions[key()]}
+    else{ui.cardopt[key()][name]=e.target.type==="checkbox"?e.target.checked:e.target.value;delete sessions[key()]}
     render();return;
   }
   if(e.target.dataset.sel){ui.topic[e.target.dataset.sel]=e.target.value;roll();render();return}
