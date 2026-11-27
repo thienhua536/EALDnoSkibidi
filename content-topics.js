@@ -70,3 +70,26 @@ const PHRASES=[
  ["Show change over time",["At first, … but by the end …","The turning point comes when …","This shift is signalled by …","What began as … becomes …"]],
  ["Finish strongly",["Ultimately, [composer] suggests that …","In this way, the text shows that …","Therefore, the experience of … shapes …","The final image leaves readers with …"]]
 ];
+
+/* =====================================================================
+   FOCUS AND WRITING MODE
+   ---------------------------------------------------------------------
+   When the "Focus and writing" button is on, the key word is always
+   "Compose" and the topic asks for a piece of writing in one of the forms below.
+   WRITING_FORMS  sentence shapes (a, b = the two ideas, g = the angle)
+   WRITING_KINDS  the forms: [value, text for the sentence, what a good one needs]
+   ===================================================================== */
+const WRITING_FORMS=[
+ (a,b,g)=>`Compose a piece of writing that explores ${a} and ${b}, with a focus on ${g}.`,
+ (a,b,g)=>`Compose a piece of writing in which ${a} changes the way someone sees ${b}.`,
+ (a,b,g)=>`Compose a piece of writing about the relationship between ${a} and ${b}, using ${g}.`,
+ (a,b,g)=>`Compose a piece of writing that shows how ${a} can affect ${b}.`
+];
+const WRITING_KINDS={
+ imaginative:{article:"an imaginative",needs:["A clear voice and a setting the reader can picture","Show feelings through actions, images and dialogue instead of only naming them","A shape: beginning, a problem or change, an ending that lands","Techniques used on purpose (e.g. {g}) so they carry the idea"],
+  plan:(a,b,g)=>[`<b>Opening:</b> put the reader inside a moment that already shows ${a}.`,`<b>Build:</b> bring in ${b} through a person, an object or a place, using ${g}.`,`<b>Turning point:</b> the moment ${a} and ${b} collide or change something.`,`<b>Ending:</b> an image or line that leaves the reader thinking. Do not explain the idea.`]},
+ analytical:{article:"an analytical",needs:["A thesis (main argument) in the first paragraph","Paragraphs that use PEEL or TEEL with evidence","Explanation of HOW techniques (e.g. {g}) create meaning","Formal tone and linking words such as however and therefore"],
+  plan:(a,b,g)=>[`<b>Introduction:</b> state your argument about ${a} and ${b} in one clear thesis.`,`<b>Body 1:</b> ${a}. Point, evidence, explanation, link.`,`<b>Body 2:</b> ${b}. Point, evidence, explanation, link.`,`<b>Body 3:</b> how ${g} joins the two ideas.`,`<b>Conclusion:</b> return to the thesis in new words.`]},
+ persuasive:{article:"a persuasive",needs:["A clear contention (the view you want the reader to accept)","Three or more arguments, each with evidence","Persuasive techniques used on purpose (e.g. {g}, inclusive language, a rhetorical question)","A call to action or a strong final line"],
+  plan:(a,b,g)=>[`<b>Hook and contention:</b> open strongly and state what you want readers to believe about ${a} and ${b}.`,`<b>Argument 1:</b> a reason, evidence and a technique such as ${g}.`,`<b>Argument 2:</b> a second reason, with an example or statistic.`,`<b>Answer the other side:</b> mention an opposing view and show why it is weaker.`,`<b>Call to action:</b> tell the reader what to think or do next.`]}
+};

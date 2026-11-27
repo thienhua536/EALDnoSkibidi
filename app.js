@@ -55,6 +55,8 @@ addSet("fix","Fix the paragraph",FIX.map(([text,ask,o,why])=>({s:"Paragraph judg
 
 addSet("more","Spot more techniques",techMoreQuiz()); // from content-more.js
 addSet("m1","Module 1 quiz",M1_QUIZ);
+addSet("types","Types of text quiz",M1_TYPES_QUIZ);
+SETS.types.ids.forEach(id=>Q[id].plain="Read the sample. What is its main job: to convince, to give facts, to create a scene, or to explain how a text works?");
 addSet("nesa","NESA word quiz",NESA_QUIZ);
 // "My quiz": questions the user wrote themselves (Me > Make my own). Rebuilt by syncMy().
 SETS.my={title:"My quiz",ids:[]};
@@ -92,7 +94,7 @@ const byCat=cat=>Object.keys(TEXTS).filter(id=>TEXTS[id].cat===cat);
 const quizTab=(id,name,sets)=>({id,name,view:"quiz",sets});
 const SECTIONS=[
  {id:"home",name:"Home",tabs:[{id:"welcome",name:"Start here",view:"home"},{id:"howto",name:"How to study",view:"howto"}]},
- {id:"m1",name:"Module 1",tabs:[{id:"ideas",name:"Key ideas",view:"m1"},quizTab("m1quiz","Module 1 quiz",["m1"]),{id:"m1topics",name:"Essay topics",view:"topics"}]},
+ {id:"m1",name:"Module 1",tabs:[{id:"ideas",name:"Key ideas",view:"m1"},quizTab("m1quiz","Module 1 quiz",["m1"]),{id:"types",name:"Types of text",view:"types"},quizTab("typesquiz","Types quiz",["types"]),{id:"m1topics",name:"Essay topics",view:"topics"}]},
  {id:"tech",name:"Techniques",tabs:[quizTab("lang","Language effects",["lang"]),quizTab("vis","Visual effects",["vis"]),quizTab("name","Name the technique",["name"]),quizTab("more","Spot more techniques",["more"]),{id:"lessons",name:"Technique lessons",view:"lessons"},{id:"cards",name:"Flashcards",view:"cards",deck:"tech"}]},
  {id:"read",name:"Reading",tabs:[quizTab("poetry","Poetry",byCat("poetry")),quizTab("fiction","Fiction",byCat("fiction")),quizTab("nonfiction","Non-fiction",byCat("nonfiction")),quizTab("visual","Visual texts",byCat("visual")),quizTab("mix","Mixed 10",["mix"]),{id:"find",name:"Find the evidence",view:"find"}]},
  {id:"unseen",name:"Unseen texts",tabs:byCat("unseen").map(id=>({id,name:TEXTS[id].kind,view:"unseen",text:id}))},
@@ -340,6 +342,13 @@ const VIEWS={
   $("main").className="wide";
   lessonStatus();
  },
+ types(){
+  layout("",`<section class="panel"><span class="skill">Module 1</span><h2>Types of text</h2>
+  <p>A text is written for a purpose. Knowing the purpose helps you choose the right language when you read and when you write. Many texts mix types, so ask: what is the main job?</p>
+  <div class="cols">${M1_TYPES.map(([n,purpose,what,ex,feats,rem])=>`<details open><summary>${n}</summary><p><b>Purpose:</b> ${purpose}</p><p>${what}</p><p><b>Examples:</b> ${ex}.</p><p><b>Features:</b></p><ul class="plainlist">${feats.map(f=>`<li>${f}</li>`).join("")}</ul><p class="note">${rem}</p></details>`).join("")}</div>
+  <p class="note">These are original study notes. Use the Types quiz to test yourself, then try “Focus and writing” in Essay topics.</p></section>`);
+  $("main").className="wide";
+ },
  m1(){
   layout("",`<section class="panel"><span class="skill">Module 1</span><h2>Texts and human experiences</h2>
   <p>This module asks what it means to be human. You study one prescribed text and shorter texts, and show how composers represent experiences, choices and contradictions. Learn the ideas below, then try the Module 1 quiz and the Essay topics tab.</p>
@@ -481,24 +490,27 @@ const VIEWS={
   const t=ui.topic??={verb:"",a:"",b:"",cur:null};
   if(!t.cur) roll();
   const c=t.cur,text=topicText(c),total=TOPIC_VERBS.length*TOPIC_IDEAS.length*(TOPIC_IDEAS.length-1)*TOPIC_ANGLES.length*TOPIC_FORMS.length;
-  const nk=NESA.find(n=>n.word.toLowerCase()===c.V.toLowerCase().split(" ")[0]);
+  const writing=t.mode==="writing",wk=WRITING_KINDS[t.wform];
+  const nk=writing?TERMS.find(n=>n.word==="Compose"):NESA.find(n=>n.word.toLowerCase()===c.V.toLowerCase().split(" ")[0]);
   const idea=w=>TOPIC_IDEAS.find(x=>x[0]===w)[1];
-  const pick=(name,field,list)=>`<label class="pick"><span>${name}</span><select data-sel="${field}"><option value="">Random</option>${list.map(x=>`<option ${t[field]===x?"selected":""}>${x}</option>`).join("")}</select></label>`;
+  const pick=(name,field,list,any="Random")=>`<label class="pick"><span>${name}</span><select data-sel="${field}"><option value="">${any}</option>${list.map(x=>`<option ${t[field]===x?"selected":""}>${x}</option>`).join("")}</select></label>`;
   const d=draft("topicplan");
-  const crit=["My thesis answers the key word, not just the topic","Each body paragraph uses PEEL or TEEL with a quotation or detail","I used a technique and said its effect","I linked both ideas, not only one","My conclusion returns to the question"];
+  const crit=writing?["I chose a form (imaginative, analytical or persuasive) and kept to it","Both ideas are in my writing, not only one","I used techniques on purpose and they carry the idea","My purpose and audience are clear","My ending lands and does not just stop"]:["My thesis answers the key word, not just the topic","Each body paragraph uses PEEL or TEEL with a quotation or detail","I used a technique and said its effect","I linked both ideas, not only one","My conclusion returns to the question"];
   layout("",`<section class="panel"><span class="skill">Extended response topic maker</span><h2>${text}</h2>
   <p class="note">About ${total.toLocaleString()} different topics are possible from these key words, ideas and angles. Choose your own words below or press New topic.</p>
-  <div class="picks">${pick("Key word","verb",TOPIC_VERBS)}${pick("Idea 1","a",TOPIC_IDEAS.map(x=>x[0]))}${pick("Idea 2","b",TOPIC_IDEAS.map(x=>x[0]))}</div>
-  <div class="actions">${button("topic-new","New topic")}${button("topic-notext",t.noText?"✓ “Prescribed text” removed. Press to bring it back":"Remove “prescribed text” from topics","quiet",`aria-pressed="${!!t.noText}"`)}${button("topic-save","Save this topic","quiet")}</div>
+  <div class="picks">${writing?pick("Form of writing","wform",Object.keys(WRITING_KINDS),"Any: imaginative, analytical or persuasive"):pick("Key word","verb",TOPIC_VERBS)}${pick("Idea 1","a",TOPIC_IDEAS.map(x=>x[0]))}${pick("Idea 2","b",TOPIC_IDEAS.map(x=>x[0]))}</div>
+  <div class="actions">${button("topic-new","New topic")}${button("topic-mode",writing?"✓ Focus and writing is on. Press for essay topics":"Focus and writing","quiet",`aria-pressed="${writing}"`)}${writing?"":button("topic-notext",t.noText?"✓ “Prescribed text” removed. Press to bring it back":"Remove “prescribed text” from topics","quiet",`aria-pressed="${!!t.noText}"`)}${button("topic-save","Save this topic","quiet")}</div>
   <details open><summary>What the key word asks: ${c.V}</summary>${nk?`<p>${nk.meaning}</p><p>${nk.todo}</p>`:`<p>Give reasons and use evidence. Show how and why, not only what.</p>`}</details>
   <details><summary>Think about your ideas</summary><p><b>${cap(c.a)}:</b> ${idea(c.a)}</p><p><b>${cap(c.b)}:</b> ${idea(c.b)}</p></details>
-  <details><summary>Plan frame</summary><ol class="plainlist"><li><b>Introduction:</b> answer the key word “${c.V.toLowerCase()}”, name ${c.a} and ${c.b}, and give one claim.</li>
+  ${writing?`<details open><summary>What each form needs</summary>${Object.entries(WRITING_KINDS).filter(([k])=>!t.wform||k===t.wform).map(([k,w])=>`<p><b>${cap(k)}:</b></p><ul class="plainlist">${w.needs.map(x=>`<li>${x.replace("{g}",c.g)}</li>`).join("")}</ul>`).join("")}<p class="note">Pick one form and keep to it. The Types of text tab in Module 1 has more.</p></details>
+  <details><summary>Plan frame${wk?" ("+t.wform+")":""}</summary>${wk?`<ol class="plainlist">${wk.plan(c.a,c.b,c.g).map(x=>`<li>${x}</li>`).join("")}</ol>`:`<p>Choose a form of writing above to see a plan frame for it. If you pick “Any”, choose your form first, then plan.</p>`}</details>`:""}
+  ${writing?"":`<details><summary>Plan frame</summary><ol class="plainlist"><li><b>Introduction:</b> answer the key word “${c.V.toLowerCase()}”, name ${c.a} and ${c.b}, and give one claim.</li>
    <li><b>Body 1:</b> ${c.a}. Evidence from an early part of your text, the technique, its effect.</li>
    <li><b>Body 2:</b> ${c.b}. Evidence from a different part, the technique, its effect.</li>
    <li><b>Body 3:</b> how ${c.a} and ${c.b} affect each other, or how they change by the end. Focus on ${c.g}.</li>
-   <li><b>Conclusion:</b> return to the question in new words.</li></ol></details>
+   <li><b>Conclusion:</b> return to the question in new words.</li></ol></details>`}
   ${timer("topic-plan",40)}
-  <label class="answer-label" for="plan">Your plan or practice answer</label><textarea id="plan" rows="10" placeholder="${t.noText?"Plan or write your answer here.":"Write the name of your prescribed text, then plan or write here."}"></textarea><p class="note" id="count"></p>
+  <label class="answer-label" for="plan">Your plan or practice answer</label><textarea id="plan" rows="10" placeholder="${t.noText||writing?"Plan or write your answer here.":"Write the name of your prescribed text, then plan or write here."}"></textarea><p class="note" id="count"></p>
   ${ticksBox(crit,d.ticks,"Check your plan or answer")}
   <h3>Saved topics</h3>${store.topics?.length?`<ul class="plainlist">${store.topics.map((x,i)=>`<li>${x} ${button("topic-del","Remove","quiet small",`data-v="${i}"`).replace('data-k="topic-del"',`data-k="topic-del${i}"`)}</li>`).join("")}</ul>`:`<p class="note">Topics you save appear here.</p>`}</section>`);
   $("plan").value=d.text;$("count").textContent=`${words(d.text)} words`;markLine();
@@ -549,12 +561,18 @@ function lessonStatus(){
   if(read===n&&!store.done.lessonsAll){store.done.lessonsAll=true;store.lessons++;save()}
 }
 // With the "Leave out prescribed text" switch on, topics no longer name a prescribed text.
-const topicText=c=>{const t=TOPIC_FORMS[c.form](c.V,c.a,c.b,c.g);
+const topicText=c=>{
+  if(ui.topic.mode==="writing"){ // "Focus and writing": Compose a piece of writing, then name the form
+    const k=ui.topic.wform,tail=k?` Write your response as ${WRITING_KINDS[k].article} text.`:" Write your response as an imaginative, analytical or persuasive text.";
+    return WRITING_FORMS[c.form%WRITING_FORMS.length](c.a,c.b,c.g)+tail;
+  }
+  const t=TOPIC_FORMS[c.form](c.V,c.a,c.b,c.g);
   return ui.topic.noText?t.replace(/ in relation to your prescribed text/g,"").replace(/ in your prescribed text/g,"").replace(/your prescribed text/g,"a text"):t};
 function roll(){
   const t=ui.topic,r=a=>a[Math.random()*a.length|0],names=TOPIC_IDEAS.map(x=>x[0]);
   const a=t.a||r(names.filter(n=>n!==t.b)),b=t.b||r(names.filter(n=>n!==a));
-  t.cur={V:t.verb||r(TOPIC_VERBS),a,b,g:r(TOPIC_ANGLES),form:Math.random()*TOPIC_FORMS.length|0};
+  const writing=t.mode==="writing";
+  t.cur={V:writing?"Compose":t.verb||r(TOPIC_VERBS),a,b,g:r(TOPIC_ANGLES),form:Math.random()*(writing?WRITING_FORMS.length:TOPIC_FORMS.length)|0};
 }
 function segments(id){
   const x=TEXTS[id];
@@ -649,6 +667,7 @@ const ACT={
    const manual=()=>{const range=document.createRange();range.selectNodeContents($("preview"));getSelection().removeAllRanges();getSelection().addRange(range);note.textContent="Paragraph selected. Copy it with your device’s copy command."};
    if(navigator.clipboard) navigator.clipboard.writeText(text).then(()=>note.textContent="Copied",manual);else manual();return false},
  "topic-new":()=>{roll()},
+ "topic-mode":()=>{const t=ui.topic;t.mode=t.mode==="writing"?"":"writing";roll()},
  "topic-notext":()=>{ui.topic.noText=!ui.topic.noText},
  "topic-save":()=>{const c=ui.topic.cur,x=topicText(c);store.topics??=[];if(!store.topics.includes(x))store.topics.unshift(x);store.topics=store.topics.slice(0,30);save()},
  "topic-del":v=>{store.topics.splice(+v,1);save()},
@@ -720,7 +739,7 @@ document.addEventListener("change",e=>{
     else{ui.cardopt[key()][name]=e.target.type==="checkbox"?e.target.checked:e.target.value;delete sessions[key()]}
     render();return;
   }
-  if(e.target.dataset.sel){ui.topic[e.target.dataset.sel]=e.target.value;roll();render();return}
+  if(e.target.dataset.sel){ui.topic[e.target.dataset.sel]=e.target.value;if(e.target.dataset.sel!=="wform")roll();render();return}
   const k=e.target.dataset.tick;if(k==null)return;
   const d=tab().view==="build"?buildDraft():tab().view==="topics"?draft("topicplan"):draft(writing.id);
   d.ticks[+k]=e.target.checked;save();markLine();chips();
