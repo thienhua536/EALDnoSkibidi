@@ -136,6 +136,7 @@ const BIO=[
 ["3.3","Why is protein shape important?","A protein’s shape decides what it can do. Heat or extreme pH can denature it, changing the shape so it stops working."],
 ["3.3","Enzymes","Protein catalysts. They speed up reactions by lowering activation energy and are specific because the substrate fits the active site."],
 ["3.3","Examples of protein functions","Structural: collagen, keratin. Transport: haemoglobin. Hormone: insulin. Defence: antibodies. Movement: actin and myosin. Enzymes: amylase."],
+["3.3","Types of proteins and their functions","Enzymes: speed up reactions (e.g. amylase). Hormones: chemical messengers (insulin). Antibodies: defence, bind antigens. Contractile: actin and myosin make muscles contract. Structural: collagen gives strength. Transport: haemoglobin carries oxygen; membrane pumps move ions. Receptors: bind signals such as neurotransmitters."],
 ["3.3","Haemoglobin","A protein of four polypeptides each with a haem group. It carries oxygen in red blood cells."],
 ["3.3","Fibrous and globular proteins","Fibrous: long strands, strong, structural (collagen, keratin). Globular: rounded and often soluble (enzymes, haemoglobin)."],
 ["3.3","Sickle cell disease and protein structure","One base substitution changes one amino acid in the haemoglobin chain. The haemoglobin folds differently and red blood cells can become sickle-shaped."],
