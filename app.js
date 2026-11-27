@@ -27,7 +27,7 @@ const plain=s=>" "+s.toLowerCase().replace(/[^a-z0-9]+/g," ").trim()+" ";
 //   best = best score per quiz | skills = right/total per skill | wrong = ids of missed questions
 //   drafts = written answers | done = finished activities | times = how often each question was missed
 //   custom = questions and cards the user made | topics = saved essay topics | lessons = lessons finished
-const blank=()=>({best:{},skills:{},wrong:[],drafts:{},build:{},done:{},times:{},custom:{cards:[],qs:[]},topics:[],lessons:0,lang:"both",last:null,known:{},mine:{ticks:[],note:""},bank:[]});
+const blank=()=>({best:{},skills:{},wrong:[],drafts:{},build:{},done:{},times:{},custom:{cards:[],qs:[]},topics:[],lessons:0,lang:"both",swim:true,last:null,known:{},mine:{ticks:[],note:""},bank:[]});
 let store=blank();
 try{
   const saved=JSON.parse(localStorage.getItem("ef3"));
@@ -99,9 +99,9 @@ const SECTIONS=[
  {id:"read",name:"Reading",tabs:[quizTab("poetry","Poetry",byCat("poetry")),quizTab("fiction","Fiction",byCat("fiction")),quizTab("nonfiction","Non-fiction",byCat("nonfiction")),quizTab("visual","Visual texts",byCat("visual")),quizTab("mix","Mixed 10",["mix"]),{id:"find",name:"Find the evidence",view:"find"}]},
  {id:"unseen",name:"Unseen texts",tabs:byCat("unseen").map(id=>({id,name:TEXTS[id].kind,view:"unseen",text:id}))},
  {id:"para",name:"Paragraphs",tabs:[{id:"rebuild",name:"Rebuild it",view:"rebuild"},{id:"spot",name:"Spot PEEL / TEEL",view:"spot"},quizTab("fix","Fix it",["fix"]),{id:"build",name:"Write your own",view:"build"}]},
- {id:"write",name:"Exam writing",tabs:[{id:"a",name:"Practice paper A",view:"paper",paper:PAPER_A},{id:"b",name:"Practice paper B",view:"paper",paper:PAPER_B},{id:"topics",name:"Topic maker",view:"topics"},{id:"phrases",name:"Sentence starters",view:"phrases"},
+ {id:"write",name:"Exam writing",tabs:[{id:"a",name:"Practice paper A",view:"paper",paper:PAPER_A},{id:"b",name:"Practice paper B",view:"paper",paper:PAPER_B},{id:"c",name:"Practice paper C",view:"paper",paper:PAPER_C},quizTab("hsc","Short-answer skills",["hsc"]),{id:"topics",name:"Topic maker",view:"topics"},{id:"phrases",name:"Sentence starters",view:"phrases"}]},
+ {id:"skills",name:"Skills",tabs:[quizTab("links","Linking words",["links"]),{id:"vocab",name:"Vocabulary cards",view:"cards",deck:"vocab"},
   {id:"sdt",name:"Show, don’t tell",view:"creative",kind:"sdt"},{id:"subtext",name:"Subtext",view:"creative",kind:"subtext"},{id:"mentor",name:"Mentor sentences",view:"creative",kind:"mentor"},{id:"micro",name:"15-min micro-write",view:"creative",kind:"micro"},{id:"errors",name:"Error bank",view:"errors"}]},
- {id:"skills",name:"Skills",tabs:[quizTab("links","Linking words",["links"]),quizTab("hsc","Short-answer skills",["hsc"]),{id:"vocab",name:"Vocabulary cards",view:"cards",deck:"vocab"}]},
  {id:"nesa",name:"NESA words",tabs:[{id:"verbs",name:"Question words",view:"glossary",list:NESA},{id:"terms",name:"English terms",view:"glossary",list:TERMS},{id:"nesacards",name:"Flashcards",view:"cards",deck:"nesa"},quizTab("nesaquiz","Quiz",["nesa"])]},
  {id:"bio",name:"Biology",tabs:[{id:"cards",name:"Module 5 flashcards",view:"cards",deck:"bio5"},{id:"map",name:"Syllabus map",view:"biomap"}]},
  {id:"me",name:"My progress",tabs:[{id:"overview",name:"Overview",view:"progress"},{id:"mistakes",name:"My mistakes",view:"mistakes"},{id:"custom",name:"Make my own",view:"custom"},quizTab("myquiz","My quiz",["my"]),{id:"mycards",name:"My cards",view:"cards",deck:"mine"}]}
@@ -143,7 +143,8 @@ const remaining=()=>clock.running?Math.max(0,Math.ceil((clock.end-Date.now())/10
 function timer(id,minutes){
   const mine=clock.id===id,left=mine?remaining():minutes*60;
   return `<div class="timer" data-id="${id}" data-secs="${minutes*60}"><span class="clock" role="timer">${mmss(left)}</span>
-  <button class="btn quiet" data-act="timer" data-k="timer">${mine&&clock.running?"Pause":"Start timer"}</button><button class="btn quiet" data-act="timer-reset" data-k="timer-reset">Reset</button></div>`;
+  <button class="btn quiet" data-act="timer" data-k="timer">${mine&&clock.running?"Pause":"Start timer"}</button><button class="btn quiet" data-act="timer-reset" data-k="timer-reset">Reset</button>
+  <div class="timeline" aria-hidden="true"><i class="tl-fill" style="width:${left/(minutes*60)*100}%"></i><span class="tl-shark" style="left:${left/(minutes*60)*100}%">${SHARK_SVG}</span></div></div>`;
 }
 setInterval(()=>{
   const el=document.querySelector(".timer");
@@ -152,6 +153,16 @@ setInterval(()=>{
   el.querySelector(".clock").textContent=left?mmss(left):"Time’s up";
   if(!left){clock.running=false;clock.left=0;el.querySelector("[data-act=timer]").textContent="Start timer"}
 },250);
+
+// The shark line moves on every screen frame (not once a second), so it glides smoothly from right to left.
+(function glide(){
+  const el=document.querySelector(".timer");
+  if(el&&clock.id===el.dataset.id){
+    const ms=clock.running?Math.max(0,clock.end-Date.now()):clock.left*1000,pct=Math.min(100,ms/(+el.dataset.secs*1000)*100);
+    el.querySelector(".tl-fill").style.width=pct+"%";el.querySelector(".tl-shark").style.left=pct+"%";
+  }
+  requestAnimationFrame(glide);
+})();
 
 /* ---------- Quiz ---------- */
 const item=id=>({id,order:shuffle([0,1,2,3]),pick:null});
@@ -189,7 +200,20 @@ function quiz(r,{vocab=true,after=""}={}){
 const FISH_SVG=`<svg viewBox="0 0 64 40" aria-hidden="true"><path d="M42 20l20-13v26z" fill="var(--fish2)"/><path d="M3 20C14 4 34 4 46 20 34 36 14 36 3 20z" fill="var(--fish)"/><path d="M20 9q-2 11 0 22M29 7.5q-2 12.500 0 25" stroke="#fff" stroke-width="4" fill="none" opacity=".85"/><path d="M24 6q8-6 15 0" stroke="var(--fish2)" stroke-width="3" fill="none"/><circle cx="11" cy="17" r="3" fill="#fff"/><circle cx="10.500" cy="17" r="1.400" fill="#0d2b3a"/></svg>`;
 // cheer() makes the happy box with falling confetti and a "what you did" list.
 // Use it anywhere: cheer("Title", "Message", ["fact 1", "fact 2"])
-const cheer=(title,message,facts=[])=>`<div class="cheer"><div class="party" aria-hidden="true">${Array.from({length:20},(_,i)=>`<i style="--x:${i*5}%;--d:${(i%7)*.22}s;--s:${8+(i%4)*5}px"></i>`).join("")}${FISH_SVG.replace("<svg",'<svg class="swimfish"')}</div>
+const CRAB_SVG=`<svg class="crab" viewBox="0 0 120 80" aria-hidden="true"><g stroke="#c4412c" stroke-width="5" stroke-linecap="round" fill="none"><path d="M34 54L18 62M38 60L26 72M86 54L102 62M82 60L94 72"/><path d="M36 42C26 38 20 30 20 22M84 42C94 38 100 30 100 22"/></g>
+<circle cx="20" cy="18" r="11" fill="#e8654b" stroke="#c4412c" stroke-width="2.500"/><circle cx="100" cy="18" r="11" fill="#e8654b" stroke="#c4412c" stroke-width="2.500"/><path d="M20 7v8M100 7v8" stroke="#c4412c" stroke-width="2.500" stroke-linecap="round"/>
+<ellipse cx="60" cy="52" rx="30" ry="20" fill="#e8654b" stroke="#c4412c" stroke-width="2.500"/>
+<path d="M54 58q6 5 12 0" stroke="#7a2418" stroke-width="2.500" fill="none" stroke-linecap="round"/></svg>`; // the crab that sits next to your score in My progress
+const SHARK_SVG=`<svg viewBox="0 -8 130 62" aria-hidden="true"><defs><clipPath id="shb"><path d="M126 27C112 17 92 11 70 11 52 11 38 17 26 24L26 29C38 34 52 40 70 40 92 40 112 36 126 27z"/></clipPath></defs>
+<path d="M30 22L5 -5C11 8 13 19 15 26 13 33 12 41 19 49L31 30z" fill="#56788d"/>
+<path d="M126 27C112 17 92 11 70 11 52 11 38 17 26 24L26 29C38 34 52 40 70 40 92 40 112 36 126 27z" fill="#7596a8"/>
+<g clip-path="url(#shb)"><path d="M20 31C50 28 90 32 130 29V50H20z" fill="#f2f8fa"/></g>
+<path d="M62 12C68 2 76 -4 85 -7 82 2 83 8 87 12z" fill="#56788d"/>
+<path d="M88 35C85 44 76 51 63 54 71 49 73 43 74 36z" fill="#56788d"/>
+<path d="M92 19q-3 5 0 10M97 18.500q-3 5 0 10M102 18q-2.500 5 0 9" stroke="#4a6a7d" stroke-width="1.400" fill="none" stroke-linecap="round"/>
+<circle cx="112" cy="22" r="2.600" fill="#10303d"/><circle cx="112.800" cy="21.200" r=".8" fill="#fff"/>
+<path d="M113 29q6 3 12 -1" stroke="#3f5c6d" stroke-width="1.500" fill="none" stroke-linecap="round"/><path d="M117 30l1 2 1.500-1.500 1 2 1.500-2" stroke="#fff" stroke-width="1" fill="none"/></svg>`; // the shark: swims behind the fish in celebrations and along the waves under the title
+const cheer=(title,message,facts=[])=>`<div class="cheer"><div class="party" aria-hidden="true">${Array.from({length:20},(_,i)=>`<i style="--x:${i*5}%;--d:${(i%7)*.22}s;--s:${8+(i%4)*5}px"></i>`).join("")}${FISH_SVG.replace("<svg",'<svg class="swimfish"')}${SHARK_SVG.replace("<svg",'<svg class="swimshark"')}</div>
   <h2>${title}</h2><p class="big-msg">${message}</p>${facts.length?`<h3>What you did</h3><ul class="facts">${facts.map(f=>`<li>${f}</li>`).join("")}</ul>`:""}</div>`;
 const praise=pct=>pct>=90?"Outstanding work. You really know this.":pct>=70?"Great work. You are building strong skills.":pct>=50?"Good effort. Every question you review makes the next round easier.":"Well done for finishing. Mistakes are how learning sticks, so read the explanations and try again.";
 const allDone=prefix=>Object.keys(store.done).filter(k=>k.startsWith(prefix)).length>=PARAS.length;
@@ -317,8 +341,8 @@ const VIEWS={
   const pic=c=>`<img class="cardimg" src="${c.im.src}" alt="${(c.im.alt||c.term).replace(/"/g,"&quot;")}">`;
   const ask=bio?(o.dir==="term"?"Say or write your answer before you flip.":"What question or term does this answer? Say it aloud."):o.dir==="term"?"Say the meaning aloud before you flip.":o.dir==="meaning"?"Which term has this meaning? Say it aloud.":"Which technique is this? Say it aloud.";
   layout("",`<section class="panel"><p class="kicker">${s.queue.length} cards left of ${s.total}. ${ask}</p>${options}
+  <div class="actions cardactions">${s.flipped?button("card-known","Got it")+button("card-almost","Almost","quiet")+button("card-notyet","Not yet","quiet"):button("flip","Flip card")}${button("cards-reset","Reshuffle","quiet")}</div>
   <div class="card" aria-live="polite">${c.tag?`<p class="note tagline">${c.tag}</p>`:""}<div class="big">${front}</div>${c.im&&c.im.front&&o.dir==="term"?pic(c):""}${s.flipped?back.filter(Boolean).map((line,i)=>`<p class="${i?"note":""}">${line}</p>`).join("")+(c.im&&!(c.im.front&&o.dir==="term")?pic(c):""):""}</div>
-  <div class="actions">${s.flipped?button("card-notyet","Not yet","quiet")+button("card-almost","Almost","quiet")+button("card-known","Got it"):button("flip","Flip card")}${button("cards-reset","Reshuffle","quiet")}</div>
   <p class="note">Not yet: comes back in 2 cards. Almost: comes back in 5. Got it: leaves the pile.</p></section>`);
  },
  // ----- Creative writing drills (content-creative.js). One view serves all four prompt-based drills. -----
@@ -342,7 +366,7 @@ const VIEWS={
  errors(){
   const bd=ui.bankDraft??={word:"",note:""},rb=draft("rb");
   const sents=ui.rbShow?rb.text.split(/(?<=[.!?…])\s+|\n+/).map(x=>x.trim()).filter(Boolean).reverse():[];
-  layout("",`<section class="panel"><span class="skill">Exam writing</span><h2>Error bank</h2>
+  layout("",`<section class="panel"><span class="skill">Skills</span><h2>Error bank</h2>
   <p>In the exam there is no spellcheck. Track YOUR repeat mistakes, practise them, and proofread for them.</p>
   <h3>1. My usual mistakes</h3><p class="note">Tick the ones you make. They show as a watch-list in the writing drills.</p>
   <fieldset><legend>Common mistakes</legend>${COMMON_MISTAKES.map((m,k)=>`<label><input type="checkbox" data-mine="${k}" ${store.mine.ticks[k]?"checked":""}><span>${m}</span></label>`).join("")}</fieldset>
@@ -362,7 +386,7 @@ const VIEWS={
  },
  biomap(){
   const count=k=>BIO.filter(b=>b[0]===k||b[0][0]===k).length;
-  layout("",`<section class="panel"><span class="skill">Biology · Module 5 Heredity</span><h2>Syllabus map</h2>
+  layout("",`<section class="panel"><span class="cornershark" aria-hidden="true">${SHARK_SVG}</span><span class="skill">Biology · Module 5 Heredity</span><h2>Syllabus map</h2>
   <p>Flashcards cover Inquiry Questions 1 to 3 and Inquiry Question 4 up to its second dot point. Press Study to open just those cards. These are original study notes based on the NSW Biology Stage 6 (2017) syllabus; check details with your teacher and textbook.</p>
   ${[1,2,3,4].map(n=>`<h3>${BIO_IQ[n]}</h3><div class="actions">${button("bio-study",`Study all ${count(String(n))} cards`,"",`data-v="${n}"`).replace('data-k="bio-study"',`data-k="bs${n}"`)}</div>
   <ul class="plainlist">${Object.entries(BIO_DP).filter(([k])=>k[0]==String(n)).map(([k,v])=>`<li>${k} ${v} <span class="note">(${count(k)} cards)</span> ${button("bio-study","Study","quiet small",`data-v="${k}"`).replace('data-k="bio-study"',`data-k="bs${k}"`)}</li>`).join("")}</ul>`).join("")}
@@ -398,7 +422,7 @@ const VIEWS={
   $("main").className="wide";
  },
  home(){
-  const GO={m1:"Learn the Module 1 ideas, take the quiz, make essay topics.",tech:"Lessons, flashcards and quizzes on language and visual techniques.",read:"Close reading with questions that need real evidence from the text.",unseen:"Read a new text, answer questions, then write.",para:"Rebuild, label, fix and write PEEL and TEEL paragraphs.",write:"Practice papers, the topic maker and sentence starters.",skills:"Linking words, short-answer skills and vocabulary cards.",nesa:"NESA key words and English terms.",bio:"Biology Module 5 (Heredity) flashcards for IQ1 to IQ4 dot point 2.",me:"Your progress, your mistakes and your own questions."};
+  const GO={m1:"Learn the Module 1 ideas, take the quiz, make essay topics.",tech:"Lessons, flashcards and quizzes on language and visual techniques.",read:"Close reading with questions that need real evidence from the text.",unseen:"Read a new text, answer questions, then write.",para:"Rebuild, label, fix and write PEEL and TEEL paragraphs.",write:"Practice papers, short-answer skills, the topic maker and sentence starters.",skills:"Linking words, vocabulary cards and writing drills.",nesa:"NESA key words and English terms.",bio:"Biology Module 5 (Heredity) flashcards for IQ1 to IQ4 dot point 2.",me:"Your progress, your mistakes and your own questions."};
   layout("",`<section class="panel"><h2>Welcome to Evidence Finder</h2>
   <p class="big-msg">Practise HSC English EAL/D, one small step at a time.</p>
   <p><b>Purpose.</b> This site helps you get ready for <b>Module 1: Texts and human experiences</b>. You learn the words and techniques, read closely, prove every answer with evidence from the text, and then build your own paragraphs and extended responses.</p>
@@ -409,10 +433,10 @@ const VIEWS={
    <li><b>Techniques.</b> Read the lessons, then use the flashcards and quizzes.</li>
    <li><b>Reading and Unseen texts.</b> Answer questions and find the proof.</li>
    <li><b>Paragraphs.</b> Practise PEEL and TEEL.</li>
-   <li><b>Exam writing.</b> Make a topic, plan it and write.</li>
+   <li><b>Exam writing.</b> Do a practice paper, make a topic and plan it. Use <b>Skills</b> for the writing drills.</li>
    <li><b>My progress > My mistakes.</b> Fix what you missed.</li></ol>
   <h3>Choose a section</h3><div class="gogrid">${SECTIONS.filter(x=>x.id!=="home").map(x=>`<button data-act="section" data-v="${x.id}" data-k="go-${x.id}"><b>${x.name}</b><small>${GO[x.id]||""}</small></button>`).join("")}</div>
-  <h3>Language help</h3><p>Pick Vietnamese, Khmer, both, or English only from the <b>Translations</b> menu at the top of the page. It changes the vocabulary cards, the reading word lists and the NESA words. Khmer was written by AI, so please ask a teacher to check it.</p>
+  <h3>Language help</h3><p>Pick Vietnamese, Khmer, both, or English only from the <b>Translations</b> menu at the bottom of the page. It changes the vocabulary cards, the reading word lists and the NESA words. Khmer was written by AI, so please ask a teacher to check it.</p>
   <p class="note">Curriculum source: <a href="${M1_LINK}" target="_blank" rel="noopener">NSW curriculum, English EAL/D Year 12</a>. All texts here are original practice material, apart from the public-domain poem “Solitude”.</p></section>`);
   $("main").className="wide";
  },
@@ -559,18 +583,24 @@ const VIEWS={
  progress(){
   const skills=Object.entries(store.skills),right=skills.reduce((n,s)=>n+s[1][0],0),total=skills.reduce((n,s)=>n+s[1][1],0);
   const count=prefix=>Object.keys(store.done).filter(k=>k.startsWith(prefix)).length;
-  const marks=[...PAPER_A,...PAPER_B,...Object.values(UNSEEN_WRITE)].filter(w=>store.drafts[w.id]?.shown);
+  const marks=[...PAPER_A,...PAPER_B,...PAPER_C,...Object.values(UNSEEN_WRITE)].filter(w=>store.drafts[w.id]?.shown);
   const name=w=>w.id.startsWith("u-")?`Unseen: ${TEXTS[w.texts[0]].title}`:`Paper ${w.id[0].toUpperCase()}, question ${w.id.slice(1)}`;
   layout("",`<section class="panel"><h2>Your progress</h2>
-  <div class="score">${total?Math.round(right/total*100)+"%":"0"}</div><p>${total?`${right} right from ${total} answers.`:"No answers yet. Start any quiz and your results appear here."}</p>
+  <div class="scorerow"><div class="score">${total?Math.round(right/total*100)+"%":"0"}</div>${CRAB_SVG}</div><p>${total?`${right} right from ${total} answers.`:"No answers yet. Start any quiz and your results appear here."}</p>
   <p>Lessons finished: ${store.lessons}. Technique lessons read: ${TECH_MORE.filter((_,i)=>store.done["lesson"+i]).length}/${TECH_MORE.length}.</p><p>Paragraphs rebuilt: ${count("rebuild")}/${PARAS.length}. Structures spotted: ${count("spot")}/${PARAS.length}. Mistakes to review: ${store.wrong.length}.</p>
   ${total?`<h3>By skill, weakest first</h3><div class="scroll"><table><tr><th>Skill</th><th>Right</th><th></th></tr>${skills.sort((a,b)=>a[1][0]/a[1][1]-b[1][0]/b[1][1]).map(([k,[a,b]])=>`<tr><td>${k}</td><td>${a}/${b}</td><td><div class="bar"><i style="width:${a/b*100}%"></i></div></td></tr>`).join("")}</table></div>`:""}
+  <h3>Flashcards</h3>${(()=>{const got=d=>(store.known[d]||[]).length;const bio=n=>BIO.filter(c=>c[0][0]==String(n)).length;
+   const bioGot=n=>(store.known.bio5||[]).filter(id=>BIO.some(c=>c[0][0]==String(n)&&"bio5:"+c[1]===id)).length;
+   const row=(l,a,b)=>`<tr><td>${l}</td><td>${b?a+"/"+b:a}</td><td><div class="bar"><i style="width:${b?a/b*100:0}%"></i></div></td></tr>`;
+   const english=Object.keys(store.known).filter(k=>k!=="bio5").reduce((n,k)=>n+got(k),0);
+   return `<p class="note">Cards you marked “Got it”. Saved in this browser.</p><div class="scroll"><table><tr><th>Deck</th><th>Got it</th><th></th></tr>${[1,2,3,4].map(n=>row("Biology IQ"+n,bioGot(n),bio(n))).join("")}${row("English cards (all decks)",english,"")} </table></div>`})()}
   ${marks.length?`<h3>Written self-marks</h3><table>${marks.map(w=>`<tr><td>${name(w)}</td><td>${tally(store.drafts[w.id].ticks)}/${w.marks||w.crit.length}</td></tr>`).join("")}</table>`:""}
   <details><summary>Back up or move my progress (no login needed)</summary>
    <p class="note">Your progress lives in this browser only. Copy this code and keep it somewhere safe (a note or message to yourself). On another device, paste it below and press Restore.</p>
    <textarea id="backup-code" rows="3" readonly></textarea><div class="actions">${button("backup-copy","Copy my code","quiet")}</div>
    <label class="answer-label" for="restore-text">Paste a code to restore</label><textarea id="restore-text" rows="3"></textarea>
    <div class="actions">${button("backup-restore","Restore from code","quiet")}</div><p class="note" id="restoremsg" aria-live="polite"></p></details>
+  <p class="note">Swimming pictures: now and then a biology diagram swims across the bottom of the screen. ${button("toggle-swim",store.swim!==false?"Turn off":"Turn on","quiet small")}</p>
   <div class="actions">${store.wrong.length?button("go-mistakes","Review my mistakes"):""}${button("reset",sessions.confirmReset?"Yes, erase everything":"Reset all progress","quiet")}${sessions.confirmReset?button("reset-no","Keep my progress"):""}</div></section>`);
   try{$("backup-code").value=btoa(unescape(encodeURIComponent(JSON.stringify(store))))}catch(e){}
  }
@@ -701,6 +731,7 @@ const ACT={
  "timer-reset":()=>{clock={id:null,left:0,end:0,running:false}},
  check:()=>{const d=draft(writing.id);if(!d.text.trim()){$("count").textContent="Write your answer first, then check it.";$("answer").focus();return false}d.shown=true;save()},
  flip:()=>{sessions[key()].flipped=true},
+ "toggle-swim":()=>{store.swim=store.swim===false;save()},
  // Card ratings: "Not yet" puts the card 2 places back, "Almost" 5 places back, "Got it" removes it.
  "card-known":()=>{const s=sessions[key()],c=s.queue.shift(),k=store.known[tab().deck]??=[];s.got++;s.flipped=false;if(!k.includes(c.id)){k.push(c.id);save()}},
  "cards-forget":()=>{store.known[tab().deck]=[];save();delete sessions[key()]},
@@ -842,3 +873,70 @@ document.addEventListener("keydown",e=>{
   const sel=e.key==="ArrowLeft"?'[data-act="prev"],[data-act="find-prev"]':'[data-act="next"],[data-act="find-next"]';
   const b=document.querySelector(sel);if(b){e.preventDefault();b.click()}
 });
+
+/* ===== ZOOM A CARD PICTURE =====
+   Click or tap any card picture to see it full size. Click the picture again to zoom in more,
+   click the dark area or press Esc or the Close button to leave. It is added to the page
+   directly (not drawn by render()), so changing cards does not remove it. */
+document.addEventListener("click",e=>{
+  const im=e.target.closest("img.cardimg");
+  if(im&&!im.closest(".zoombox")){
+    const box=document.createElement("div");box.className="zoombox";box.setAttribute("role","dialog");box.setAttribute("aria-label","Picture, full size");
+    box.innerHTML=`<button class="zoomclose" type="button">Close</button><div class="zoomscroll"><img src="${im.src}" alt="${(im.alt||"").replace(/"/g,"&quot;")}"></div><p class="zoomhint">Click the picture to zoom in or out. Esc closes.</p>`;
+    document.body.appendChild(box);box.querySelector(".zoomclose").focus();return;
+  }
+  const z=e.target.closest(".zoombox");if(!z)return;
+  if(e.target.matches(".zoomscroll img")) e.target.classList.toggle("in");
+  else z.remove();
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelector(".zoombox")?.remove()});
+
+
+/* ===== SWIMMING PICTURES =====
+   Now and then one of the Biology pictures (or the little fish) swims in from the right,
+   wagging a fish tail, crosses the lower part of the screen, dives and splashes. It never
+   blocks clicks (pointer-events:none) and can be turned off in My progress. To change how often
+   it appears, edit the numbers in nextSwim(). Only pictures from CARD_IMAGES are used, so none are from English. */
+(function(){
+  if(matchMedia("(prefers-reduced-motion:reduce)").matches||!Element.prototype.animate) return;
+  const FISHPIC="data:image/svg+xml;utf8,"+encodeURIComponent(FISH_SVG.replace("<svg",'<svg xmlns="http://www.w3.org/2000/svg" width="64" height="40"').replace(/var\(--fish2\)/g,"#f2623a").replace(/var\(--fish\)/g,"#ff8a5c"));
+  // a fish tail (two lobes) that is glued to the right side of a swimming picture
+  const TAIL='<svg class="swimtail" viewBox="0 0 40 60" aria-hidden="true"><path d="M0 30L38 2Q30 30 38 58z" fill="#f2623a"/><path d="M0 30L26 30" stroke="#ff8a5c" stroke-width="3" opacity=".6"/></svg>';
+  const pool=()=>Object.values(CARD_IMAGES).map(v=>typeof v==="string"?v:v.src);
+  // splash(x,y): rings spread on the water, a crown of drops jumps up and falls back with gravity
+  function splash(x,y){
+    const s=document.createElement("div");s.className="splash";s.style.left=x+"px";s.style.top=y+"px";document.body.appendChild(s);
+    for(let r=0;r<2;r++){const ring=document.createElement("b");s.appendChild(ring);
+      ring.animate([{transform:"scale(.2)",opacity:.9},{transform:"scale(2.6)",opacity:0}],{duration:1000,delay:r*220,easing:"ease-out",fill:"both"})}
+    for(let i=0;i<12;i++){
+      const d=document.createElement("i"),dx=(i-5.5)*7+(Math.random()*6-3),up=26+Math.random()*34,sz=4+Math.random()*5;
+      d.style.width=d.style.height=sz+"px";s.appendChild(d);
+      d.animate([{transform:"translate(0,0)",opacity:1,offset:0},{transform:`translate(${dx*.55}px,${-up}px)`,opacity:1,offset:.45,easing:"cubic-bezier(.4,0,1,1)"},{transform:`translate(${dx}px,6px)`,opacity:0,offset:1}],{duration:850+Math.random()*250,easing:"cubic-bezier(.2,.7,.4,1)",fill:"both"});
+    }
+    setTimeout(()=>s.remove(),1600);
+  }
+  function swim(){
+    if(document.hidden||store.swim===false||document.querySelector(".zoombox")) return;
+    const list=[...pool(),FISHPIC,FISHPIC],src=list[Math.floor(Math.random()*list.length)],isFish=src===FISHPIC;
+    const vw=innerWidth,vh=innerHeight,w=isFish?Math.round(Math.min(90,Math.max(60,vw*.08))):Math.round(Math.min(150,Math.max(90,vw*.13)));
+    const top=vh*(.55+Math.random()*.3),endX=vw*(.1+Math.random()*.3),dur=9000+Math.random()*4000;
+    const box=document.createElement("div");box.className="swimbox";box.style.width=w+"px";box.style.top=top+"px";
+    box.innerHTML=`<img class="swimpic${isFish?" isfish":""}" src="${src}" alt="">${isFish?"":TAIL}`;
+    document.body.appendChild(box);
+    const dist=vw+w-endX,dive=vh*.07;
+    const a=box.animate([
+      {transform:"translate(0,0) rotate(0deg)",opacity:0},
+      {transform:`translate(${-dist*.06}px,-4px) rotate(-1.5deg)`,opacity:.95,offset:.06},
+      {transform:`translate(${-dist*.5}px,10px) rotate(1.5deg)`,opacity:.95,offset:.5},
+      {transform:`translate(${-dist*.88}px,-4px) rotate(-2deg)`,opacity:.95,offset:.88},
+      {transform:`translate(${-dist}px,${dive}px) rotate(18deg)`,opacity:0}
+    ],{duration:dur,easing:"ease-in-out",fill:"forwards"});
+    // the splash happens just as the picture dips under the water
+    setTimeout(()=>{if(!box.isConnected)return;const r=box.getBoundingClientRect();splash(r.left+r.width*.4,r.bottom-6)},dur*.93);
+    a.onfinish=()=>box.remove();
+  }
+  window.evidenceSwim={swim,splash}; // handy for testing in the browser console
+  // nextSwim(): waits a random 40 to 100 seconds (the first one comes after 20 to 40 seconds)
+  function nextSwim(first){setTimeout(()=>{swim();nextSwim(false)},(first?20000+Math.random()*20000:40000+Math.random()*60000))}
+  nextSwim(true);
+})();

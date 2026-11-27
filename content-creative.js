@@ -1,5 +1,5 @@
 /* =====================================================================
-   content-creative.js  —  CREATIVE WRITING DRILLS (Exam writing section)
+   content-creative.js  —  CREATIVE WRITING DRILLS (Skills section)
    ---------------------------------------------------------------------
    Five habits, each a small repeatable drill:
      1. Show, don't tell      (SDT_ITEMS)
