@@ -214,3 +214,11 @@ h1{display:flex;align-items:center;gap:12px}
 .swimfish{position:absolute;top:28px;left:-70px;width:56px;height:auto;animation:swim 3.2s ease-in-out .2s 1 both}
 @keyframes swim{to{left:100%}}
 @media (prefers-reduced-motion:reduce){.party,.logo{display:none}.logo{display:block;animation:none}}
+
+.reps{display:inline-flex;gap:6px;vertical-align:middle;margin:0 8px}
+.reps input{width:20px;height:20px;accent-color:var(--accent)}
+.backwards li{padding:4px 0}
+blockquote{margin:.6rem 0;padding:8px 14px;border-left:4px solid var(--fish);background:var(--cheer-bg);border-radius:0 8px 8px 0;font-family:var(--read)}
+.sample{background:var(--cheer-bg);border-radius:10px;padding:4px 14px 10px;margin:10px 0}
+input[type="text"]{width:100%}
+h4{margin:1rem 0 .4rem}

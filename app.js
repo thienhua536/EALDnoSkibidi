@@ -27,7 +27,7 @@ const plain=s=>" "+s.toLowerCase().replace(/[^a-z0-9]+/g," ").trim()+" ";
 //   best = best score per quiz | skills = right/total per skill | wrong = ids of missed questions
 //   drafts = written answers | done = finished activities | times = how often each question was missed
 //   custom = questions and cards the user made | topics = saved essay topics | lessons = lessons finished
-const blank=()=>({best:{},skills:{},wrong:[],drafts:{},build:{},done:{},times:{},custom:{cards:[],qs:[]},topics:[],lessons:0,lang:"both",known:{}});
+const blank=()=>({best:{},skills:{},wrong:[],drafts:{},build:{},done:{},times:{},custom:{cards:[],qs:[]},topics:[],lessons:0,lang:"both",last:null,known:{},mine:{ticks:[],note:""},bank:[]});
 let store=blank();
 try{
   const saved=JSON.parse(localStorage.getItem("ef3"));
@@ -37,7 +37,7 @@ try{
     old?.a?.forEach((d,i)=>{if(d.text) store.drafts["a"+(i+1)]=d});
   }
 }catch(e){}
-store.times??={};store.custom??={cards:[],qs:[]};store.topics??=[];store.lessons??=0;store.lang??="both";store.known??={};
+store.times??={};store.custom??={cards:[],qs:[]};store.topics??=[];store.lessons??=0;store.lang??="both";store.last??=null;store.known??={};store.mine??={ticks:[],note:""};store.bank??=[];
 const save=()=>{try{localStorage.setItem("ef3",JSON.stringify(store))}catch(e){}};
 
 /* ---------- Question bank ---------- */
@@ -99,7 +99,8 @@ const SECTIONS=[
  {id:"read",name:"Reading",tabs:[quizTab("poetry","Poetry",byCat("poetry")),quizTab("fiction","Fiction",byCat("fiction")),quizTab("nonfiction","Non-fiction",byCat("nonfiction")),quizTab("visual","Visual texts",byCat("visual")),quizTab("mix","Mixed 10",["mix"]),{id:"find",name:"Find the evidence",view:"find"}]},
  {id:"unseen",name:"Unseen texts",tabs:byCat("unseen").map(id=>({id,name:TEXTS[id].kind,view:"unseen",text:id}))},
  {id:"para",name:"Paragraphs",tabs:[{id:"rebuild",name:"Rebuild it",view:"rebuild"},{id:"spot",name:"Spot PEEL / TEEL",view:"spot"},quizTab("fix","Fix it",["fix"]),{id:"build",name:"Write your own",view:"build"}]},
- {id:"write",name:"Exam writing",tabs:[{id:"a",name:"Practice paper A",view:"paper",paper:PAPER_A},{id:"b",name:"Practice paper B",view:"paper",paper:PAPER_B},{id:"topics",name:"Topic maker",view:"topics"},{id:"phrases",name:"Sentence starters",view:"phrases"}]},
+ {id:"write",name:"Exam writing",tabs:[{id:"a",name:"Practice paper A",view:"paper",paper:PAPER_A},{id:"b",name:"Practice paper B",view:"paper",paper:PAPER_B},{id:"topics",name:"Topic maker",view:"topics"},{id:"phrases",name:"Sentence starters",view:"phrases"},
+  {id:"sdt",name:"Show, don’t tell",view:"creative",kind:"sdt"},{id:"subtext",name:"Subtext",view:"creative",kind:"subtext"},{id:"mentor",name:"Mentor sentences",view:"creative",kind:"mentor"},{id:"micro",name:"15-min micro-write",view:"creative",kind:"micro"},{id:"errors",name:"Error bank",view:"errors"}]},
  {id:"skills",name:"Skills",tabs:[quizTab("links","Linking words",["links"]),quizTab("hsc","Short-answer skills",["hsc"]),{id:"vocab",name:"Vocabulary cards",view:"cards",deck:"vocab"}]},
  {id:"nesa",name:"NESA words",tabs:[{id:"verbs",name:"Question words",view:"glossary",list:NESA},{id:"terms",name:"English terms",view:"glossary",list:TERMS},{id:"nesacards",name:"Flashcards",view:"cards",deck:"nesa"},quizTab("nesaquiz","Quiz",["nesa"])]},
  {id:"bio",name:"Biology",tabs:[{id:"cards",name:"Module 5 flashcards",view:"cards",deck:"bio5"},{id:"map",name:"Syllabus map",view:"biomap"}]},
@@ -250,6 +251,7 @@ function written(w,label,extra=""){
 }
 function markLine(){
   const el=$("markline");if(!el)return;
+  if(tab().view==="creative"){el.textContent=`Checklist: ${tally(draft(ui.cwDraft).ticks)}/${ui.cwCrit}`;return}
   if(tab().view==="topics"){el.textContent=`Checklist: ${tally(draft("topicplan").ticks)}/5`;return}
   if(tab().view==="build"){el.textContent=`Checklist: ${tally(buildDraft().ticks)}/4`;return}
   const w=writing,score=tally(draft(w.id).ticks);
@@ -318,6 +320,45 @@ const VIEWS={
   <div class="card" aria-live="polite">${c.tag?`<p class="note tagline">${c.tag}</p>`:""}<div class="big">${front}</div>${c.im&&c.im.front&&o.dir==="term"?pic(c):""}${s.flipped?back.filter(Boolean).map((line,i)=>`<p class="${i?"note":""}">${line}</p>`).join("")+(c.im&&!(c.im.front&&o.dir==="term")?pic(c):""):""}</div>
   <div class="actions">${s.flipped?button("card-notyet","Not yet","quiet")+button("card-almost","Almost","quiet")+button("card-known","Got it"):button("flip","Flip card")}${button("cards-reset","Reshuffle","quiet")}</div>
   <p class="note">Not yet: comes back in 2 cards. Almost: comes back in 5. Got it: leaves the pile.</p></section>`);
+ },
+ // ----- Creative writing drills (content-creative.js). One view serves all four prompt-based drills. -----
+ creative(){
+  const kind=tab().kind,cfg=CREATIVE[kind],ix=(ui.cwi??={});
+  if(ix[kind]==null) ix[kind]=Math.random()*cfg.items.length|0;
+  const it=cfg.items[ix[kind]],id=kind+"-"+ix[kind],d=draft(id);
+  ui.cwDraft=id;ui.cwCrit=cfg.crit.length;
+  layout("",`<section class="panel"><span class="skill">${cfg.skill}</span><h2>${cfg.title(it)}</h2>
+   <div>${cfg.task(it)}</div>
+   ${cfg.minutes?timer("cw-"+kind,cfg.minutes):""}
+   <label class="answer-label" for="cw-text">Your writing</label><textarea id="cw-text" data-draft="${id}" rows="9"></textarea>
+   <p class="note" id="count"></p>${kind==="sdt"?`<p class="note" id="flags" aria-live="polite"></p>`:""}
+   ${ticksBox(cfg.crit,d.ticks,"Check your own writing")}
+   <div class="actions">${button("cw-new","New prompt","quiet")}${button("cw-show",d.shown?"Hide the example":"Show an example")}</div>
+   ${d.shown?`<div class="sample"><h3>Example</h3>${cfg.model(it)}</div>`:""}
+   <details open><summary>Common mistakes in this drill</summary><ul class="plainlist">${cfg.mistakes.map(m=>`<li>${m}</li>`).join("")}</ul></details>
+   <details open><summary>My watch-list</summary>${watchList()}</details></section>`);
+  $("cw-text").value=d.text;updateCw();markLine();
+ },
+ errors(){
+  const bd=ui.bankDraft??={word:"",note:""},rb=draft("rb");
+  const sents=ui.rbShow?rb.text.split(/(?<=[.!?…])\s+|\n+/).map(x=>x.trim()).filter(Boolean).reverse():[];
+  layout("",`<section class="panel"><span class="skill">Exam writing</span><h2>Error bank</h2>
+  <p>In the exam there is no spellcheck. Track YOUR repeat mistakes, practise them, and proofread for them.</p>
+  <h3>1. My usual mistakes</h3><p class="note">Tick the ones you make. They show as a watch-list in the writing drills.</p>
+  <fieldset><legend>Common mistakes</legend>${COMMON_MISTAKES.map((m,k)=>`<label><input type="checkbox" data-mine="${k}" ${store.mine.ticks[k]?"checked":""}><span>${m}</span></label>`).join("")}</fieldset>
+  <label class="answer-label" for="mine-note">Other mistakes I usually make when I write (type your own)</label><textarea id="mine-note" rows="3" placeholder="For example: I forget -ed in the past tense. I mix up relief and relieved."></textarea>
+  <h3>2. Common confusions</h3><div class="cols">${CONFUSIONS.map(([w,r,tip,ex])=>`<article class="mistake"><p><s>${w}</s> → <b>${r}</b></p><p>${tip}</p><p class="note">${ex}</p></article>`).join("")}</div>
+  <h3>3. My error bank</h3><p class="note">Add a word or phrase you get wrong. Write the correct form in a sentence, then tick the boxes as you write it 5 times on paper.</p>
+  <label class="answer-label" for="bank-word">Word or phrase</label><input type="text" id="bank-word" data-bank="word">
+  <label class="answer-label" for="bank-note">Correct form in a sentence</label><input type="text" id="bank-note" data-bank="note">
+  <div class="actions">${button("bank-add","Add to my bank")}</div><p class="note" id="bankmsg" aria-live="polite"></p>
+  ${store.bank.length?`<ul class="plainlist">${store.bank.map(b=>`<li><b>${b.word}</b>: ${b.note} <span class="reps">${b.reps.map((on,n)=>`<input type="checkbox" data-bk="${b.id}:${n}" ${on?"checked":""} aria-label="Written ${n+1} time${n?"s":""}">`).join("")}</span> ${button("bank-del","Delete","quiet small",`data-v="${b.id}"`).replace('data-k="bank-del"',`data-k="bd${b.id}"`)}</li>`).join("")}</ul>`:`<p class="note">Your bank is empty. Add a word above, or press a starter word below.</p>`}
+  <h4>Starter spelling words (press to add)</h4><div class="actions">${SPELLING.map(([w])=>button("bank-starter",w,"quiet small",`data-v="${w}"`).replace('data-k="bank-starter"',`data-k="sp-${w}"`)).join("")}</div>
+  <h3>4. Proofread by reading backwards</h3><p class="note">Paste a practice paragraph. The tool shows your sentences from the last to the first. Reading out of order stops your brain correcting mistakes automatically, so missing words (“I [was] stunned”) stand out.</p>
+  <label class="answer-label" for="rb-text">Your paragraph</label><textarea id="rb-text" rows="6"></textarea>
+  <div class="actions">${button("rb-go","Show sentences backwards")}</div>
+  ${sents.length?`<ol class="plainlist backwards">${sents.map(x=>`<li>${x}</li>`).join("")}</ol><p class="note">For each sentence ask: Is there a verb (was, were)? Is the tense right? Is every word spelled correctly? Are there missing a, an or the?</p>`:ui.rbShow?`<p class="note">Type some sentences first.</p>`:""}</section>`);
+  $("mine-note").value=store.mine.note;$("rb-text").value=rb.text;$("bank-word").value=bd.word;$("bank-note").value=bd.note;
  },
  biomap(){
   const count=k=>BIO.filter(b=>b[0]===k||b[0][0]===k).length;
@@ -525,7 +566,13 @@ const VIEWS={
   <p>Lessons finished: ${store.lessons}. Technique lessons read: ${TECH_MORE.filter((_,i)=>store.done["lesson"+i]).length}/${TECH_MORE.length}.</p><p>Paragraphs rebuilt: ${count("rebuild")}/${PARAS.length}. Structures spotted: ${count("spot")}/${PARAS.length}. Mistakes to review: ${store.wrong.length}.</p>
   ${total?`<h3>By skill, weakest first</h3><div class="scroll"><table><tr><th>Skill</th><th>Right</th><th></th></tr>${skills.sort((a,b)=>a[1][0]/a[1][1]-b[1][0]/b[1][1]).map(([k,[a,b]])=>`<tr><td>${k}</td><td>${a}/${b}</td><td><div class="bar"><i style="width:${a/b*100}%"></i></div></td></tr>`).join("")}</table></div>`:""}
   ${marks.length?`<h3>Written self-marks</h3><table>${marks.map(w=>`<tr><td>${name(w)}</td><td>${tally(store.drafts[w.id].ticks)}/${w.marks||w.crit.length}</td></tr>`).join("")}</table>`:""}
+  <details><summary>Back up or move my progress (no login needed)</summary>
+   <p class="note">Your progress lives in this browser only. Copy this code and keep it somewhere safe (a note or message to yourself). On another device, paste it below and press Restore.</p>
+   <textarea id="backup-code" rows="3" readonly></textarea><div class="actions">${button("backup-copy","Copy my code","quiet")}</div>
+   <label class="answer-label" for="restore-text">Paste a code to restore</label><textarea id="restore-text" rows="3"></textarea>
+   <div class="actions">${button("backup-restore","Restore from code","quiet")}</div><p class="note" id="restoremsg" aria-live="polite"></p></details>
   <div class="actions">${store.wrong.length?button("go-mistakes","Review my mistakes"):""}${button("reset",sessions.confirmReset?"Yes, erase everything":"Reset all progress","quiet")}${sessions.confirmReset?button("reset-no","Keep my progress"):""}</div></section>`);
+  try{$("backup-code").value=btoa(unescape(encodeURIComponent(JSON.stringify(store))))}catch(e){}
  }
 };
 /* ---------- Flashcard decks ---------- */
@@ -568,6 +615,23 @@ const topicText=c=>{
   }
   const t=TOPIC_FORMS[c.form](c.V,c.a,c.b,c.g);
   return ui.topic.noText?t.replace(/ in relation to your prescribed text/g,"").replace(/ in your prescribed text/g,"").replace(/your prescribed text/g,"a text"):t};
+// ---------- Creative writing helpers ----------
+// watchList(): the mistakes the student ticked in the Error bank, shown inside every drill.
+function watchList(){
+  const mine=COMMON_MISTAKES.filter((_,k)=>store.mine.ticks[k]);
+  if(!mine.length&&!store.mine.note.trim()) return `<p class="note">Nothing yet. Open the Error bank, tick the mistakes you usually make, and they will appear here as a reminder while you write and check.</p>`;
+  return `<ul class="plainlist">${mine.map(m=>`<li>${m}</li>`).join("")}${store.mine.note.trim()?`<li><b>My own note:</b> ${store.mine.note.trim().replace(/</g,"&lt;")}</li>`:""}</ul>`;
+}
+// updateCw(): word count, and for Show-don't-tell the flagged "telling" words.
+function updateCw(){
+  const d=draft(ui.cwDraft),kind=tab().kind,cfg=CREATIVE[kind];
+  $("count").textContent=`${words(d.text)} words${kind==="micro"?" (aim for 150 to 200)":""}`;
+  if(kind==="sdt"){
+    const it=cfg.items[ui.cwi[kind]],tokens=(d.text.toLowerCase().match(/[a-z’']+/g)||[]);
+    const bad=[...new Set(tokens.filter(w=>SDT_BANNED.includes(w)||it.stems.some(st=>w.startsWith(st))))];
+    $("flags").textContent=d.text.trim()?(bad.length?`Telling words found: ${bad.join(", ")}. Try showing these with an action or detail instead.`:"No telling words found. Check the other boxes yourself."):"";
+  }
+}
 function roll(){
   const t=ui.topic,r=a=>a[Math.random()*a.length|0],names=TOPIC_IDEAS.map(x=>x[0]);
   const a=t.a||r(names.filter(n=>n!==t.b)),b=t.b||r(names.filter(n=>n!==a));
@@ -602,11 +666,14 @@ function render(){
   $("sections").innerHTML=SECTIONS.map(s=>tabButton("section",s,s.id===ui.sec)).join("");
   $("subtabs").innerHTML=section().tabs.map(t=>tabButton("tab",t,t.id===tab().id)).join("");
   $("lang").value=store.lang;
+  store.last={sec:ui.sec,tab:ui.tab};save(); // remember where the student was
   chips();$("nav").scrollLeft=left;
   VIEWS[tab().view]();
   if(focus) document.querySelector(`[data-k="${focus}"]`)?.focus({preventScroll:true});
 }
 
+// On load, return to the last section and tab (if they still exist).
+if(store.last&&SECTIONS.some(x=>x.id===store.last.sec)){ui.sec=store.last.sec;ui.tab={...(store.last.tab||{})}}
 /* ---------- Clicks and typing ---------- */
 function record(it){
   const skill=Q[it.id].s;store.skills[skill]??=[0,0];store.skills[skill][1]++;
@@ -667,6 +734,13 @@ const ACT={
    const manual=()=>{const range=document.createRange();range.selectNodeContents($("preview"));getSelection().removeAllRanges();getSelection().addRange(range);note.textContent="Paragraph selected. Copy it with your device’s copy command."};
    if(navigator.clipboard) navigator.clipboard.writeText(text).then(()=>note.textContent="Copied",manual);else manual();return false},
  "topic-new":()=>{roll()},
+ "cw-new":()=>{const k=tab().kind,n=CREATIVE[k].items.length;let i;do{i=Math.random()*n|0}while(n>1&&i===ui.cwi[k]);ui.cwi[k]=i},
+ "cw-show":()=>{const d=draft(ui.cwDraft);d.shown=!d.shown;save()},
+ "bank-add":()=>{const bd=ui.bankDraft;if(!bd.word.trim()){$("bankmsg").textContent="Type a word or phrase first.";return false}
+   store.bank.unshift({id:Date.now().toString(36),word:bd.word.trim(),note:bd.note.trim(),reps:[0,0,0,0,0]});ui.bankDraft=null;save()},
+ "bank-starter":v=>{if(store.bank.some(b=>b.word===v))return false;const sp=SPELLING.find(x=>x[0]===v);store.bank.unshift({id:Date.now().toString(36)+v,word:v,note:sp?sp[1]:"",reps:[0,0,0,0,0]});save()},
+ "bank-del":v=>{store.bank=store.bank.filter(b=>b.id!==v);save()},
+ "rb-go":()=>{ui.rbShow=true},
  "topic-mode":()=>{const t=ui.topic;t.mode=t.mode==="writing"?"":"writing";roll()},
  "topic-notext":()=>{ui.topic.noText=!ui.topic.noText},
  "topic-save":()=>{const c=ui.topic.cur,x=topicText(c);store.topics??=[];if(!store.topics.includes(x))store.topics.unshift(x);store.topics=store.topics.slice(0,30);save()},
@@ -686,6 +760,12 @@ const ACT={
  "my-delq":v=>{store.custom.qs=store.custom.qs.filter(x=>x.id!==v);store.wrong=store.wrong.filter(x=>x!=="my."+v);save();syncMy();delete sessions["me/myquiz/my"]},
  "my-noimg":()=>{ui.my.img=""},
  "my-delcard":v=>{store.custom.cards.splice(+v,1);save();delete sessions["me/mycards"]},
+ "backup-copy":()=>{const el=$("backup-code");el.select();navigator.clipboard?.writeText(el.value).then(()=>{$("restoremsg").textContent="Copied."}).catch(()=>{$("restoremsg").textContent="Press Ctrl+C (or hold and copy) to copy the selected code."});return false},
+ "backup-restore":()=>{const msg=$("restoremsg");
+   try{const data=JSON.parse(decodeURIComponent(escape(atob($("restore-text").value.trim()))));
+     if(typeof data!=="object"||!data.best||!data.wrong) throw 0;
+     store={...blank(),...data};save();syncMy();msg.textContent="Restored.";}
+   catch(e){msg.textContent="That code did not work. Copy the whole code again.";return false}},
  "go-mistakes":()=>{ui.sec="me";ui.tab.me="mistakes";delete sessions["me/mistakes"]},
  reset:()=>{if(!sessions.confirmReset){sessions.confirmReset=true;return}
    store=blank();Object.keys(sessions).forEach(k=>delete sessions[k]);save();try{localStorage.removeItem("evidence-paper")}catch(e){}},
@@ -709,6 +789,10 @@ document.addEventListener("input",e=>{
     entries.forEach(d=>d.hidden=!d.dataset.word.includes(term));
     $("nomatch").hidden=entries.some(d=>!d.hidden);
   }
+  if(e.target.dataset.draft){draft(e.target.dataset.draft).text=e.target.value;save();updateCw()}
+  if(e.target.dataset.bank){(ui.bankDraft??={word:"",note:""})[e.target.dataset.bank]=e.target.value}
+  if(e.target.id==="mine-note"){store.mine.note=e.target.value;save()}
+  if(e.target.id==="rb-text"){draft("rb").text=e.target.value;save()}
   if(e.target.dataset.my){const k=e.target.dataset.my;if(/^o\d$/.test(k))ui.my.o[+k[1]]=e.target.value;else ui.my[k]=e.target.value}
   if(e.target.id==="plan"){draft("topicplan").text=e.target.value;save();$("count").textContent=`${words(e.target.value)} words`}
   if(e.target.id==="answer"){draft(writing.id).text=e.target.value;save();$("count").textContent=`${words(e.target.value)} words`}
@@ -740,8 +824,10 @@ document.addEventListener("change",e=>{
     render();return;
   }
   if(e.target.dataset.sel){ui.topic[e.target.dataset.sel]=e.target.value;if(e.target.dataset.sel!=="wform")roll();render();return}
+  if(e.target.dataset.mine!=null){store.mine.ticks[+e.target.dataset.mine]=e.target.checked;save();return}
+  if(e.target.dataset.bk){const [id,n]=e.target.dataset.bk.split(":"),b=store.bank.find(x=>x.id===id);if(b){b.reps[+n]=e.target.checked?1:0;save()}return}
   const k=e.target.dataset.tick;if(k==null)return;
-  const d=tab().view==="build"?buildDraft():tab().view==="topics"?draft("topicplan"):draft(writing.id);
+  const d=tab().view==="build"?buildDraft():tab().view==="topics"?draft("topicplan"):tab().view==="creative"?draft(ui.cwDraft):draft(writing.id);
   d.ticks[+k]=e.target.checked;save();markLine();chips();
 });
 
