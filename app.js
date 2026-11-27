@@ -182,9 +182,11 @@ function quiz(r,{vocab=true,after=""}={}){
   const v=document.querySelector(".vocab");if(v&&wasOpen)v.open=true;
 }
 /* ---------- Celebration ---------- */
+// The little fish drawing used in the header and in celebrations.
+const FISH_SVG=`<svg viewBox="0 0 64 40" aria-hidden="true"><path d="M42 20l20-13v26z" fill="var(--fish2)"/><path d="M3 20C14 4 34 4 46 20 34 36 14 36 3 20z" fill="var(--fish)"/><path d="M20 9q-2 11 0 22M29 7.5q-2 12.500 0 25" stroke="#fff" stroke-width="4" fill="none" opacity=".85"/><path d="M24 6q8-6 15 0" stroke="var(--fish2)" stroke-width="3" fill="none"/><circle cx="11" cy="17" r="3" fill="#fff"/><circle cx="10.500" cy="17" r="1.400" fill="#0d2b3a"/></svg>`;
 // cheer() makes the happy box with falling confetti and a "what you did" list.
 // Use it anywhere: cheer("Title", "Message", ["fact 1", "fact 2"])
-const cheer=(title,message,facts=[])=>`<div class="cheer"><div class="party" aria-hidden="true">${Array.from({length:20},(_,i)=>`<i style="--x:${i*5}%;--d:${(i%7)*.22}s;--c:${i%4}"></i>`).join("")}</div>
+const cheer=(title,message,facts=[])=>`<div class="cheer"><div class="party" aria-hidden="true">${Array.from({length:20},(_,i)=>`<i style="--x:${i*5}%;--d:${(i%7)*.22}s;--s:${8+(i%4)*5}px"></i>`).join("")}${FISH_SVG.replace("<svg",'<svg class="swimfish"')}</div>
   <h2>${title}</h2><p class="big-msg">${message}</p>${facts.length?`<h3>What you did</h3><ul class="facts">${facts.map(f=>`<li>${f}</li>`).join("")}</ul>`:""}</div>`;
 const praise=pct=>pct>=90?"Outstanding work. You really know this.":pct>=70?"Great work. You are building strong skills.":pct>=50?"Good effort. Every question you review makes the next round easier.":"Well done for finishing. Mistakes are how learning sticks, so read the explanations and try again.";
 const allDone=prefix=>Object.keys(store.done).filter(k=>k.startsWith(prefix)).length>=PARAS.length;
@@ -286,7 +288,9 @@ const VIEWS={
  cards(){
   const deck=tab().deck,o=ui.cardopt[key()]??={dir:"term",group:"all"};
   const known=store.known[deck]??=[];
-  const all=cardList(deck,o.group).map(c=>({...c,id:deck+":"+c.term})).filter(c=>(o.dir!=="example"||c.ex)&&!(o.hide&&known.includes(c.id)));
+  // a card picture comes from the card itself (cards you made) or from CARD_IMAGES in content-images.js
+  const picture=x=>!x?null:typeof x==="string"?{src:x}:x;
+  const all=cardList(deck,o.group).map(c=>({...c,id:deck+":"+c.term,im:picture(c.img||CARD_IMAGES[c.term])})).filter(c=>(o.dir!=="example"||c.ex)&&!(o.hide&&known.includes(c.id)));
   const s=sessions[key()]??={queue:shuffle(all),total:all.length,flipped:false,got:0,almost:0,notyet:0,hard:[],start:Date.now(),counted:false};
   const sel=(name,label,opts)=>`<label class="pick"><span>${label}</span><select data-opt="${name}">${opts.map(([v,t])=>`<option value="${v}" ${o[name]===v?"selected":""}>${t}</option>`).join("")}</select></label>`;
   const bio=deck==="bio5";
@@ -306,9 +310,10 @@ const VIEWS={
   if(o.dir==="meaning"){front=c.meaning;back=[`<b>${c.term}</b>`,ex,...c.more]}
   else if(o.dir==="example"){front=`“${c.ex}”`;back=[`<b>${c.term}</b>`,c.meaning,...c.more]}
   else{front=c.term;back=[c.meaning,ex,...c.more]}
+  const pic=c=>`<img class="cardimg" src="${c.im.src}" alt="${(c.im.alt||c.term).replace(/"/g,"&quot;")}">`;
   const ask=bio?(o.dir==="term"?"Say or write your answer before you flip.":"What question or term does this answer? Say it aloud."):o.dir==="term"?"Say the meaning aloud before you flip.":o.dir==="meaning"?"Which term has this meaning? Say it aloud.":"Which technique is this? Say it aloud.";
   layout("",`<section class="panel"><p class="kicker">${s.queue.length} cards left of ${s.total}. ${ask}</p>${options}
-  <div class="card" aria-live="polite">${c.tag?`<p class="note tagline">${c.tag}</p>`:""}<div class="big">${front}</div>${s.flipped?back.filter(Boolean).map((line,i)=>`<p class="${i?"note":""}">${line}</p>`).join(""):""}</div>
+  <div class="card" aria-live="polite">${c.tag?`<p class="note tagline">${c.tag}</p>`:""}<div class="big">${front}</div>${c.im&&c.im.front&&o.dir==="term"?pic(c):""}${s.flipped?back.filter(Boolean).map((line,i)=>`<p class="${i?"note":""}">${line}</p>`).join("")+(c.im&&!(c.im.front&&o.dir==="term")?pic(c):""):""}</div>
   <div class="actions">${s.flipped?button("card-notyet","Not yet","quiet")+button("card-almost","Almost","quiet")+button("card-known","Got it"):button("flip","Flip card")}${button("cards-reset","Reshuffle","quiet")}</div>
   <p class="note">Not yet: comes back in 2 cards. Almost: comes back in 5. Got it: leaves the pile.</p></section>`);
  },
@@ -391,7 +396,7 @@ const VIEWS={
   ${ids.map(card).join("")}</section>`);
  },
  custom(){
-  const m=ui.my??={q:"",o:["","","",""],right:0,why:"",front:"",back:""};
+  const m=ui.my??={q:"",o:["","","",""],right:0,why:"",front:"",back:"",img:""};
   layout("",`<section class="panel"><h2>Make my own questions</h2><p class="note">You decide the key answer. Write a question, type four choices, then tick the circle beside the correct one. Everything is saved in this browser. Play your questions in My quiz.</p>
   <label class="answer-label" for="my-q">Question</label><textarea id="my-q" data-my="q" rows="2"></textarea>
   ${[0,1,2,3].map(i=>`<div class="myopt"><input type="radio" name="right" data-myright="${i}" ${m.right===i?"checked":""} aria-label="Option ${"ABCD"[i]} is the correct answer"><input type="text" id="my-o${i}" data-my="o${i}" placeholder="Choice ${"ABCD"[i]}" aria-label="Choice ${"ABCD"[i]}"></div>`).join("")}
@@ -399,9 +404,11 @@ const VIEWS={
   <div class="actions">${button("my-addq","Save question")}</div><p class="note" id="mymsg" aria-live="polite">${ui.mymsg||""}</p>
   <h3>Make a flashcard</h3><label class="answer-label" for="my-front">Front (the term or question)</label><input type="text" id="my-front" data-my="front">
   <label class="answer-label" for="my-back">Back (the answer)</label><textarea id="my-back" data-my="back" rows="2"></textarea>
+  <label class="answer-label" for="my-img">Picture (optional, from your device)</label><input type="file" id="my-img" accept="image/*">
+  ${m.img?`<img class="cardimg" src="${m.img}" alt="Preview of your picture">${button("my-noimg","Remove picture","quiet small")}`:""}
   <div class="actions">${button("my-addcard","Save card")}</div>
   <h3>My questions (${store.custom.qs.length})</h3>${store.custom.qs.length?`<ul class="plainlist">${store.custom.qs.map(x=>`<li>${x.ask} <b>Key: ${x.o[0]}</b> ${button("my-delq","Delete","quiet small",`data-v="${x.id}"`).replace('data-k="my-delq"',`data-k="dq${x.id}"`)}</li>`).join("")}</ul>`:`<p class="note">None yet.</p>`}
-  <h3>My cards (${store.custom.cards.length})</h3>${store.custom.cards.length?`<ul class="plainlist">${store.custom.cards.map((x,i)=>`<li>${x.front}: ${x.back} ${button("my-delcard","Delete","quiet small",`data-v="${i}"`).replace('data-k="my-delcard"',`data-k="dc${i}"`)}</li>`).join("")}</ul>`:`<p class="note">None yet.</p>`}</section>`);
+  <h3>My cards (${store.custom.cards.length})</h3>${store.custom.cards.length?`<ul class="plainlist">${store.custom.cards.map((x,i)=>`<li>${x.front}: ${x.back}${x.img?" (with picture)":""} ${button("my-delcard","Delete","quiet small",`data-v="${i}"`).replace('data-k="my-delcard"',`data-k="dc${i}"`)}</li>`).join("")}</ul>`:`<p class="note">None yet.</p>`}</section>`);
   $("my-q").value=m.q;$("my-why").value=m.why;$("my-front").value=m.front;$("my-back").value=m.back;m.o.forEach((x,i)=>$("my-o"+i).value=x);
   ui.mymsg="";
  },
@@ -473,7 +480,7 @@ const VIEWS={
  topics(){
   const t=ui.topic??={verb:"",a:"",b:"",cur:null};
   if(!t.cur) roll();
-  const c=t.cur,text=TOPIC_FORMS[c.form](c.V,c.a,c.b,c.g),total=TOPIC_VERBS.length*TOPIC_IDEAS.length*(TOPIC_IDEAS.length-1)*TOPIC_ANGLES.length*TOPIC_FORMS.length;
+  const c=t.cur,text=topicText(c),total=TOPIC_VERBS.length*TOPIC_IDEAS.length*(TOPIC_IDEAS.length-1)*TOPIC_ANGLES.length*TOPIC_FORMS.length;
   const nk=NESA.find(n=>n.word.toLowerCase()===c.V.toLowerCase().split(" ")[0]);
   const idea=w=>TOPIC_IDEAS.find(x=>x[0]===w)[1];
   const pick=(name,field,list)=>`<label class="pick"><span>${name}</span><select data-sel="${field}"><option value="">Random</option>${list.map(x=>`<option ${t[field]===x?"selected":""}>${x}</option>`).join("")}</select></label>`;
@@ -482,7 +489,7 @@ const VIEWS={
   layout("",`<section class="panel"><span class="skill">Extended response topic maker</span><h2>${text}</h2>
   <p class="note">About ${total.toLocaleString()} different topics are possible from these key words, ideas and angles. Choose your own words below or press New topic.</p>
   <div class="picks">${pick("Key word","verb",TOPIC_VERBS)}${pick("Idea 1","a",TOPIC_IDEAS.map(x=>x[0]))}${pick("Idea 2","b",TOPIC_IDEAS.map(x=>x[0]))}</div>
-  <div class="actions">${button("topic-new","New topic")}${button("topic-save","Save this topic","quiet")}</div>
+  <div class="actions">${button("topic-new","New topic")}${button("topic-notext",t.noText?"✓ “Prescribed text” removed. Press to bring it back":"Remove “prescribed text” from topics","quiet",`aria-pressed="${!!t.noText}"`)}${button("topic-save","Save this topic","quiet")}</div>
   <details open><summary>What the key word asks: ${c.V}</summary>${nk?`<p>${nk.meaning}</p><p>${nk.todo}</p>`:`<p>Give reasons and use evidence. Show how and why, not only what.</p>`}</details>
   <details><summary>Think about your ideas</summary><p><b>${cap(c.a)}:</b> ${idea(c.a)}</p><p><b>${cap(c.b)}:</b> ${idea(c.b)}</p></details>
   <details><summary>Plan frame</summary><ol class="plainlist"><li><b>Introduction:</b> answer the key word “${c.V.toLowerCase()}”, name ${c.a} and ${c.b}, and give one claim.</li>
@@ -491,7 +498,7 @@ const VIEWS={
    <li><b>Body 3:</b> how ${c.a} and ${c.b} affect each other, or how they change by the end. Focus on ${c.g}.</li>
    <li><b>Conclusion:</b> return to the question in new words.</li></ol></details>
   ${timer("topic-plan",40)}
-  <label class="answer-label" for="plan">Your plan or practice answer</label><textarea id="plan" rows="10" placeholder="Write the name of your prescribed text, then plan or write here."></textarea><p class="note" id="count"></p>
+  <label class="answer-label" for="plan">Your plan or practice answer</label><textarea id="plan" rows="10" placeholder="${t.noText?"Plan or write your answer here.":"Write the name of your prescribed text, then plan or write here."}"></textarea><p class="note" id="count"></p>
   ${ticksBox(crit,d.ticks,"Check your plan or answer")}
   <h3>Saved topics</h3>${store.topics?.length?`<ul class="plainlist">${store.topics.map((x,i)=>`<li>${x} ${button("topic-del","Remove","quiet small",`data-v="${i}"`).replace('data-k="topic-del"',`data-k="topic-del${i}"`)}</li>`).join("")}</ul>`:`<p class="note">Topics you save appear here.</p>`}</section>`);
   $("plan").value=d.text;$("count").textContent=`${words(d.text)} words`;markLine();
@@ -528,7 +535,7 @@ function cardList(deck,group){
     return group==="all"?cards:cards.filter(c=>c.group===group||c.group[0]===group);
   }
   if(deck==="nesa") return [...NESA,...TERMS].map(n=>({term:n.word,meaning:n.meaning,ex:"",more:[`Similar words: ${n.similar}`,trans(n.word,n.vi)]}));
-  if(deck==="mine") return store.custom.cards.map(c=>({term:c.front,meaning:c.back,ex:"",more:[]}));
+  if(deck==="mine") return store.custom.cards.map(c=>({term:c.front,meaning:c.back,ex:"",more:[],img:c.img}));
   const seen=new Map(); // vocabulary: one card per word, with synonyms and Vietnamese
   for(const t of Object.values(TEXTS)) for(const v of t.vocab||[]) if(!seen.has(v[0])) seen.set(v[0],{term:v[0],meaning:v[1],ex:"",more:[synonyms(v[0]),trans(v[0],v[2])].filter(Boolean)});
   return [...seen.values()];
@@ -541,6 +548,9 @@ function lessonStatus(){
   $("lessoncheer").innerHTML=read===n?cheer("All technique lessons read!","Fantastic. Now test yourself in Spot more techniques and the flashcards.",[`You read ${n} technique lessons.`,"You can now name, explain and write about each one."]):"";
   if(read===n&&!store.done.lessonsAll){store.done.lessonsAll=true;store.lessons++;save()}
 }
+// With the "Leave out prescribed text" switch on, topics no longer name a prescribed text.
+const topicText=c=>{const t=TOPIC_FORMS[c.form](c.V,c.a,c.b,c.g);
+  return ui.topic.noText?t.replace(/ in relation to your prescribed text/g,"").replace(/ in your prescribed text/g,"").replace(/your prescribed text/g,"a text"):t};
 function roll(){
   const t=ui.topic,r=a=>a[Math.random()*a.length|0],names=TOPIC_IDEAS.map(x=>x[0]);
   const a=t.a||r(names.filter(n=>n!==t.b)),b=t.b||r(names.filter(n=>n!==a));
@@ -639,7 +649,8 @@ const ACT={
    const manual=()=>{const range=document.createRange();range.selectNodeContents($("preview"));getSelection().removeAllRanges();getSelection().addRange(range);note.textContent="Paragraph selected. Copy it with your device’s copy command."};
    if(navigator.clipboard) navigator.clipboard.writeText(text).then(()=>note.textContent="Copied",manual);else manual();return false},
  "topic-new":()=>{roll()},
- "topic-save":()=>{const c=ui.topic.cur,x=TOPIC_FORMS[c.form](c.V,c.a,c.b,c.g);store.topics??=[];if(!store.topics.includes(x))store.topics.unshift(x);store.topics=store.topics.slice(0,30);save()},
+ "topic-notext":()=>{ui.topic.noText=!ui.topic.noText},
+ "topic-save":()=>{const c=ui.topic.cur,x=topicText(c);store.topics??=[];if(!store.topics.includes(x))store.topics.unshift(x);store.topics=store.topics.slice(0,30);save()},
  "topic-del":v=>{store.topics.splice(+v,1);save()},
  "lesson-read":v=>{store.done["lesson"+v]=!store.done["lesson"+v];save();lessonStatus();return false},
  "mistakes-start":()=>{sessions[key()]={round:newRound("mistakes",ui.mfilter)}},
@@ -652,8 +663,9 @@ const ACT={
    store.custom.qs.push({id:Date.now().toString(36),ask:m.q.trim(),o:[opts[m.right],...opts.filter((_,i)=>i!==m.right)],why:m.why.trim()});
    ui.my=null;ui.mymsg="Saved. Play it in My quiz.";save();syncMy();delete sessions["me/myquiz/my"]},
  "my-addcard":()=>{const m=ui.my;if(!m.front.trim()||!m.back.trim()){$("mymsg").textContent="Write both sides of the card.";return false}
-   store.custom.cards.push({front:m.front.trim(),back:m.back.trim()});m.front=m.back="";ui.mymsg="Card saved. Study it in My cards.";save();delete sessions["me/mycards"]},
+   store.custom.cards.push({front:m.front.trim(),back:m.back.trim(),img:m.img||""});m.front=m.back=m.img="";ui.mymsg="Card saved. Study it in My cards.";save();delete sessions["me/mycards"]},
  "my-delq":v=>{store.custom.qs=store.custom.qs.filter(x=>x.id!==v);store.wrong=store.wrong.filter(x=>x!=="my."+v);save();syncMy();delete sessions["me/myquiz/my"]},
+ "my-noimg":()=>{ui.my.img=""},
  "my-delcard":v=>{store.custom.cards.splice(+v,1);save();delete sessions["me/mycards"]},
  "go-mistakes":()=>{ui.sec="me";ui.tab.me="mistakes";delete sessions["me/mistakes"]},
  reset:()=>{if(!sessions.confirmReset){sessions.confirmReset=true;return}
@@ -684,6 +696,15 @@ document.addEventListener("input",e=>{
   if(e.target.dataset.part){buildDraft()[e.target.dataset.part]=e.target.value;save();preview()}
 });
 document.addEventListener("change",e=>{
+  if(e.target.id==="my-img"){ // shrink the chosen picture so it fits in browser storage
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=()=>{const im=new Image();im.onload=()=>{
+      const k=Math.min(1,520/im.width),cv=document.createElement("canvas");cv.width=Math.round(im.width*k);cv.height=Math.round(im.height*k);
+      const g=cv.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,cv.width,cv.height);g.drawImage(im,0,0,cv.width,cv.height);
+      ui.my.img=cv.toDataURL("image/jpeg",.8);render()};im.src=reader.result};
+    reader.readAsDataURL(file);return;
+  }
   if(e.target.id==="lang"){store.lang=e.target.value;save();for(const k in sessions) if(sessions[k]?.queue) delete sessions[k]; // flashcard decks hold translated text, so rebuild them
     render();return}
   if(e.target.dataset.lf){ // tick boxes on the technique lessons tab
