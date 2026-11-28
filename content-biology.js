@@ -114,7 +114,7 @@ const BIO=[
 // ================= IQ3 · DOT POINT 1: forms of DNA =================
 ["3.1","DNA in eukaryotes","Long linear chromosomes inside a nucleus, wound around histone proteins. There are several chromosomes, and genes contain introns and exons."],
 ["3.1","DNA in prokaryotes","A single circular chromosome in the cytoplasm (nucleoid), with no nucleus and no histone wrapping like eukaryotes. Usually no introns."],
-["3.1","Plasmid","A small circular piece of DNA, separate from the main chromosome, found in bacteria. It may carry extra genes such as antibiotic resistance and is used as a vector in genetic engineering."],
+["3.1","Plasmid","A small circular piece of DNA, separate from the main chromosome, found in bacteria. It may carry extra genes such as antibiotic resistance."],
 ["3.1","Histone","A protein that DNA is wound around in eukaryotes, packing the DNA tightly into chromatin and chromosomes."],
 ["3.1","Gene and allele","A gene is a section of DNA that codes for a polypeptide. An allele is one version of a gene."],
 ["3.1","Exon and intron","Exons are coding sections that stay in the finished mRNA. Introns are non-coding sections removed during RNA processing in eukaryotes."],
